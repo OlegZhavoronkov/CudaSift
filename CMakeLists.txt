@@ -1,6 +1,7 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.20)
 
-project(cudaSift)
+project(cudaSift 
+LANGUAGES C CXX CUDA)
 set(cudaSift_VERSION_MAJOR 2)
 set(cudaSift_VERSION_MINOR 0)
 set(cudaSift_VERSION_PATCH 0)
@@ -16,7 +17,9 @@ find_package(CUDA)
 if (NOT CUDA_FOUND)
   message(STATUS "CUDA not found. Project will not be built.")
 endif(NOT CUDA_FOUND)
-
+if(NOT CUDA_ARCHITECTURES)
+    set(CUDA_ARCHITECTURES "Auto")
+endif()
 if (WIN32)
   set(EXTRA_CXX_FLAGS "/DVERBOSE /D_CRT_SECURE_NO_WARNINGS ")
   list(APPEND CUDA_NVCC_FLAGS "-arch=sm_35;--compiler-options;-O2;-DVERBOSE") 
