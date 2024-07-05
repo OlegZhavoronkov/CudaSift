@@ -18,7 +18,8 @@
 #include <memory>
 #include <algorithm>
 #include <immintrin.h>
-#include "cudautils.h"
+#include <cudasift/cudautils.h>
+
 
 #define RUNCPU 1
 #define CHECK  1
@@ -70,9 +71,10 @@ void MatchC1(float *h_pts1, float *h_pts2, float *h_score, int *h_index)
   }
 }
 
+#ifdef __AVX__
 void MatchC2(float *h_pts1, float *h_pts2, float *h_score, int *h_index)
 {
-#define BSIZ  256
+  constexpr const unsigned int   BSIZ = 256;
   std::memset(h_score, 0, sizeof(float)*NPTS);
   for (int b1=0;b1<NPTS;b1+=BSIZ) {
     for (int b2=0;b2<NPTS;b2+=BSIZ) {
@@ -98,10 +100,12 @@ void MatchC2(float *h_pts1, float *h_pts2, float *h_score, int *h_index)
     }
   }
 }
+#endif
 
+#ifdef __AVX__
 void MatchC3(float *h_pts1, float *h_pts2, float *h_score, int *h_index)
 {
-#define BSIZ  256
+  constexpr const unsigned int   BSIZ = 256;
   std::memset(h_score, 0, sizeof(float)*NPTS);
 #pragma omp parallel for
   for (int b1=0;b1<NPTS;b1+=BSIZ) {
@@ -128,8 +132,9 @@ void MatchC3(float *h_pts1, float *h_pts2, float *h_score, int *h_index)
     }
   }
 }
+#endif
 
-void CheckMatches(int *h_index, int *h_index2, float *h_score, float *h_score2)
+void CheckMatches( int* h_index , int* h_index2 , float* h_score , float* h_score2 )
 {
   int ndiff = 0;
   for (int i=0;i<NPTS;i++) {
@@ -489,7 +494,7 @@ __global__ void Match8(float *d_pts1, float *d_pts2, float *d_score, int *d_inde
     for (int j=ty;j<M7W;j+=M7H/M7R)     
       buffer1[j*NDIM/4 + (d + j)%(NDIM/4)] = ((float4*)d_pts1)[(bp1 + j)*(NDIM/4) + d];
 
-#define NRX 2
+  constexpr const unsigned int    NRX = 2;
   float max_score[NRX];
   int index[NRX];
   for (int i=0;i<NRX;i++) {
@@ -561,7 +566,7 @@ __global__ void Match8(float *d_pts1, float *d_pts2, float *d_score, int *d_inde
 
 __global__ void Match8small(float *d_pts1, float *d_pts2, float *d_score, int *d_index)
 {
-#define NRX 2
+  constexpr const unsigned int    NRX = 2;
   __shared__ float4 buffer1[M7W*NDIM/4]; 
   __shared__ float4 buffer2[M7H*NDIM/4];       
   int tx = threadIdx.x;
@@ -640,9 +645,11 @@ __global__ void Match8small(float *d_pts1, float *d_pts2, float *d_score, int *d
 
 __global__ void Match8blocked(float *d_pts1, float *d_pts2, float *d_score, int *d_index)
 {
-#define NRX 2
-#define NUM (NRX*M7R)                       // 32*8 threads
-  __shared__ float4 buffer1[M7W*NDIM/4];    // 32*32
+//#define NRX 2
+//#define NUM (NRX*M7R)                       // 32*8 threads
+  constexpr const unsigned int   NRX = 2;
+  constexpr const unsigned int   NUM = ( NRX * M7R );
+  __shared__ float4 buffer1[ M7W * NDIM / 4 ];    // 32*32
   __shared__ float4 buffer2[M7H*NUM];       // 32*8
   int tx = threadIdx.x;
   int ty = threadIdx.y;
@@ -738,9 +745,11 @@ __global__ void Match8blocked(float *d_pts1, float *d_pts2, float *d_score, int 
 
 __global__ void Match8blocked2(float *d_pts1, float *d_pts2, float *d_score, int *d_index)
 {
-#define NRX 2
-#define NUM (NRX*M7R)                       // 32*8 threads
-  __shared__ float4 buffer1[M7W*NDIM/4];    // 32*32
+//#define NRX 2
+//#define NUM (NRX*M7R)                       // 32*8 threads
+  constexpr const unsigned int NRX =2;
+  constexpr const unsigned int NUM= (NRX*M7R);   
+  __shared__ float4 buffer1[ M7W * NDIM / 4 ];    // 32*32
   __shared__ float4 buffer2[M7H*NUM];       // 32*8
   int tx = threadIdx.x;
   int ty = threadIdx.y;
@@ -823,8 +832,8 @@ __global__ void Match8blocked2(float *d_pts1, float *d_pts2, float *d_score, int
 
 __global__ void Match9(float *d_pts1, float *d_pts2, float *d_score, int *d_index)
 {
-#define NRX 2
-#define NUM 8
+  constexpr const unsigned int NRX = 2;
+  constexpr const unsigned int NUM = 8;
   __shared__ float4 buffer1[M7W*NDIM/4]; 
   __shared__ float4 buffer2[M7H*NUM];       
   int tx = threadIdx.x;
@@ -973,11 +982,14 @@ int main(int argc, char *argv[])
     delay = time.read() - ltime;
     std::cout << "MatchCPU2:   " << delay << " ms  " << 2.0*NPTS*NPTS*NDIM/delay/1024/1024 << " Gflops" << std::endl;
 #endif
-
+#ifdef __AVX__
     ltime = time.read();
     MatchC3(h_pts1, h_pts2, h_score.data(), h_index.data());
     delay = time.read() - ltime;
-    std::cout << "MatchCPU3:   " << delay << " ms  " << 2.0*NPTS*NPTS*NDIM/delay/1024/1024 << " Gflops" << std::endl;
+    std::cout << "MatchCPU3:   " << delay << " ms  " << 2.0 * NPTS * NPTS * NDIM / delay / 1024 / 1024 << " Gflops" << std::endl;
+#else
+    std::cout << "MatchCPU3:   disabled since of lack avx support " << std::endl;
+#endif
   }
   dim3 blocks, threads;
 #if 0
