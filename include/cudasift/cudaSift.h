@@ -1,7 +1,8 @@
+#pragma once
 #ifndef CUDASIFT_H
 #define CUDASIFT_H
 
-#include "cudaImage.h"
+#include <cudasift/cudaImage.h>
 
 typedef struct {
   float xpos;

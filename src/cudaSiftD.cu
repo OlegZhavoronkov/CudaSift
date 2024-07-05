@@ -1,10 +1,12 @@
 //********************************************************//
 // CUDA SIFT extractor by Marten Bjorkman aka Celebrandil //
 //********************************************************//  
-
-#include "cudautils.h"
-#include "cudaSiftD.h"
-#include "cudaSift.h"
+#include <cudasift/cudautils.h>
+#include <cudasift/cudaSiftD.h>
+#include <cudasift/cudaSift.h>
+//#include "cudautils.h"
+//#include "cudaSiftD.h"
+//#include "cudaSift.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Kernel configuration

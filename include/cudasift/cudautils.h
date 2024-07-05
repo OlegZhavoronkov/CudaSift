@@ -1,3 +1,4 @@
+#pragma once
 #ifndef CUDAUTILS_H
 #define CUDAUTILS_H
 
