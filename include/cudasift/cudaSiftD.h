@@ -1,45 +1,58 @@
 //********************************************************//
 // CUDA SIFT extractor by Marten Bjorkman aka Celebrandil //
 //********************************************************//  
-
+#pragma once
 #ifndef CUDASIFTD_H
 #define CUDASIFTD_H
 
-#define NUM_SCALES      5
+constexpr const unsigned int NUM_SCALES =5;
 
 // Scale down thread block width
-#define SCALEDOWN_W    64 // 60 
+//#define SCALEDOWN_W    64 // 60 
+constexpr const unsigned int  SCALEDOWN_W = 64;
 
 // Scale down thread block height
-#define SCALEDOWN_H    16 // 8
+//#define SCALEDOWN_H    16 // 8
+constexpr const unsigned int SCALEDOWN_H = 16;
 
 // Scale up thread block width
-#define SCALEUP_W      64
+//#define SCALEUP_W      64
+constexpr const unsigned int SCALEUP_W = 64;
 
 // Scale up thread block height
-#define SCALEUP_H       8
+//#define SCALEUP_H       8
+constexpr const unsigned int SCALEUP_H = 8;
 
 // Find point thread block width
-#define MINMAX_W       30 //32 
+//#define MINMAX_W       30 //32 
+constexpr const unsigned int MINMAX_W = 30;//32 
 
 // Find point thread block height
-#define MINMAX_H        8 //16 
- 
+//#define MINMAX_H        8 //16 
+constexpr const unsigned int MINMAX_H = 8; //16 
+
 // Laplace thread block width
-#define LAPLACE_W     128 // 56
+//#define LAPLACE_W     128 // 56
+constexpr const unsigned int LAPLACE_W = 128; // 56
 
 // Laplace rows per thread
-#define LAPLACE_H       4
+//#define LAPLACE_H       4
+constexpr const unsigned int LAPLACE_H = 4;
 
 // Number of laplace scales
-#define LAPLACE_S   (NUM_SCALES+3)
+//#define LAPLACE_S   (NUM_SCALES+3)
+constexpr const unsigned int LAPLACE_S = ( NUM_SCALES + 3 );
 
 // Laplace filter kernel radius
-#define LAPLACE_R       4
+//#define LAPLACE_R       4
+constexpr const unsigned int LAPLACE_R = 4;
 
-#define LOWPASS_W      24 //56
-#define LOWPASS_H      32 //16
-#define LOWPASS_R       4
+//#define LOWPASS_W      24 //56
+constexpr const unsigned int LOWPASS_W = 24; //56
+//#define LOWPASS_H      32 //16
+constexpr const unsigned int LOWPASS_H = 32;
+//#define LOWPASS_R       4
+constexpr const unsigned int LOWPASS_R = 4;
 
 //====================== Number of threads ====================//
 // ScaleDown:               SCALEDOWN_W + 4
