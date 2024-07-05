@@ -36,7 +36,8 @@ else()
             include(FindCUDA/select_compute_arch)
             CUDA_DETECT_INSTALLED_GPUS(INSTALLED_GPU_CCS_1)
             string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
-            string(REPLACE " " ";" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_2}")
+            string(REPLACE "." "" CUDA_ARCH_LIST1 "${INSTALLED_GPU_CCS_2}")
+            string(REPLACE " " ";" CUDA_ARCH_LIST "${CUDA_ARCH_LIST1}")
             set(CUDASIFT_CUDA_ARCH_USED ${CUDA_ARCH_LIST})
             set(CUDASIFT_CUDA_ARCH ${CUDA_ARCH_LIST})
 #            set(CUDASFP_CUDA_ARCH "Auto")
@@ -73,51 +74,79 @@ set(CMAKE_C_FLAGS "${CLINE_WO_PEDANTIC}")
 #  endif()
 #endif()
 
-set(cuda_sources
-  cudaImage.cu  
-  cudaImage.h  
-  cudaSiftH.cu 
-  cudaSiftH.h  
-  matching.cu  
-  cudaSiftD.h  
-  cudaSift.h  
-  cudautils.h
+set( cuda_sift_sources
+        ${CMAKE_CURRENT_LIST_DIR}/src/cudaImage.cu
+        ${CMAKE_CURRENT_LIST_DIR}/src/cudaSiftD.cu
+        ${CMAKE_CURRENT_LIST_DIR}/src/cudaSiftH.cu
+        ${CMAKE_CURRENT_LIST_DIR}/src/geomFuncs.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/src/match.cu
+        ${CMAKE_CURRENT_LIST_DIR}/src/matching.cu
 )  
 
-set(sources
-  geomFuncs.cpp  
-  mainSift.cpp  
+set (cuda_sift_hdrs
+        ${CMAKE_CURRENT_LIST_DIR}/include/cudasift/cudaImage.h  
+        ${CMAKE_CURRENT_LIST_DIR}/include/cudasift/cudaSiftH.h  
+        ${CMAKE_CURRENT_LIST_DIR}/include/cudasift/cudaSiftD.h  
+        ${CMAKE_CURRENT_LIST_DIR}/include/cudasift/cudaSift.h  
+        ${CMAKE_CURRENT_LIST_DIR}/include/cudasift/cudautils.h
 )
 
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR} 
+set(sift_sources
+        ${CMAKE_CURRENT_LIST_DIR}/src/geomFuncs.cpp  
 )
 
+#include_directories(
+#  ${CMAKE_CURRENT_SOURCE_DIR} 
+#)
 
 
-cuda_add_executable(cudasift ${cuda_sources} ${sources} OPTIONS )
 
+add_library(
+    cudasift 
+    SHARED ""
+)
 
+target_sources(cudasift 
+    INTERFACE 
+    ${cuda_sift_hdrs}
+    PRIVATE
+    ${cuda_sift_sources}
+    ${sift_sources}
+)
+
+target_include_directories(cudasift PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include/)
 
 set_target_properties(cudasift PROPERTIES
   COMPILE_FLAGS "${EXTRA_CXX_FLAGS}"			   
 )
 
-target_link_libraries(cudasift ${CUDA_cudadevrt_LIBRARY} ${OpenCV_LIBS})
+set(cudasift_dep_libs ${CUDA_cudart_LIBRARY} ${OpenCV_LIBS})
+message("$\{CUDA_cudart_LIBRARY\}\n\"${CUDA_cudart_LIBRARY}\" \n$\{OpenCV_LIBS\} \"${OpenCV_LIBS}\"\n$\{cudasift_dep_libs\}\n${cudasift_dep_libs}")
+target_link_libraries(  cudasift 
+PUBLIC
+PRIVATE 
+        ${cudasift_dep_libs}
+)
 #  /usr/local/cuda/lib64/libcudadevrt.a ${OpenCV_LIBS} 
 #)
 
-message( "CUDA_ARCHITECTURES \"${CUDA_ARCHITECTURES}\" CMAKE_CUDA_ARCHITECTURES \"${CMAKE_CUDA_ARCHITECTURES}\"" )
+message( "CUDA_ARCHITECTURES \"${CUDA_ARCHITECTURES}\" CMAKE_CUDA_ARCHITECTURES \"${CMAKE_CUDA_ARCHITECTURES}\"\n$\{CUDASIFT_CUDA_ARCH_USED\}\n\"${CUDASIFT_CUDA_ARCH_USED}\"" )
 set_property(TARGET cudasift PROPERTY CUDA_ARCHITECTURES ${CUDASIFT_CUDA_ARCH_USED})
 
-install(FILES 
-  ${cuda_sources} 
-  ${sources}
-  cudaSiftD.cu
-  CMakeLists.txt
-  Copyright.txt
-  DESTINATION .
+add_executable(cudasift_app 
+    ${CMAKE_CURRENT_LIST_DIR}/app/mainSift.cpp
 )
-install(FILES data/left.pgm data/righ.pgm
-  DESTINATION data
-)
+
+target_link_libraries(cudasift_app PRIVATE cudasift)
+
+#install(FILES 
+#  ${cuda_sources} 
+#  ${sources}
+#  cudaSiftD.cu
+#  CMakeLists.txt
+#  Copyright.txt
+#  DESTINATION .
+#)
+#install(FILES data/left.pgm data/righ.pgm
+#  DESTINATION data
+#)
