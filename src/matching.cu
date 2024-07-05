@@ -175,10 +175,14 @@ __global__ void FindMaxCorr3(float *corrData, SiftPoint *sift1, SiftPoint *sift2
   }
 }
 
-#define FMC2W 16
-#define FMC2H 4
+//#define FMC2W 16
+//#define FMC2H 4
 
-__global__ void FindMaxCorr2(SiftPoint *sift1, SiftPoint *sift2, int numPts1, int numPts2)
+constexpr const unsigned int FMC2W = 16;
+constexpr const unsigned int FMC2H = 4 ;
+
+
+__global__ void FindMaxCorr2( SiftPoint* sift1 , SiftPoint* sift2 , int numPts1 , int numPts2 )
 {
   __shared__ float siftPoint[128];
   __shared__ float maxScore[FMC2H]; 

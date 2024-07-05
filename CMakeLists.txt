@@ -15,7 +15,7 @@ include(CPack)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(RemoveOption)
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED COMPONENTS core highgui imgproc)
 
 set(CUDASIFT_CUDA_ARCH_NOT_SET "CUDASIFT_CUDA_ARCH_NOT_SET")
 set(CUDASIFT_CUDA_ARCH_USED)
@@ -81,6 +81,8 @@ set( cuda_sift_sources
         ${CMAKE_CURRENT_LIST_DIR}/src/geomFuncs.cpp
         ${CMAKE_CURRENT_LIST_DIR}/src/match.cu
         ${CMAKE_CURRENT_LIST_DIR}/src/matching.cu
+        ${CMAKE_CURRENT_LIST_DIR}/src/siftDeviceResidents.cuh
+        ${CMAKE_CURRENT_LIST_DIR}/src/siftDeviceResidents.cu
 )  
 
 set (cuda_sift_hdrs
@@ -120,7 +122,7 @@ set_target_properties(cudasift PROPERTIES
   COMPILE_FLAGS "${EXTRA_CXX_FLAGS}"			   
 )
 
-set(cudasift_dep_libs ${CUDA_cudart_LIBRARY} ${OpenCV_LIBS})
+set(cudasift_dep_libs ${CUDA_cudart_LIBRARY} opencv_core)
 message("$\{CUDA_cudart_LIBRARY\}\n\"${CUDA_cudart_LIBRARY}\" \n$\{OpenCV_LIBS\} \"${OpenCV_LIBS}\"\n$\{cudasift_dep_libs\}\n${cudasift_dep_libs}")
 target_link_libraries(  cudasift 
 PUBLIC
@@ -132,12 +134,12 @@ PRIVATE
 
 message( "CUDA_ARCHITECTURES \"${CUDA_ARCHITECTURES}\" CMAKE_CUDA_ARCHITECTURES \"${CMAKE_CUDA_ARCHITECTURES}\"\n$\{CUDASIFT_CUDA_ARCH_USED\}\n\"${CUDASIFT_CUDA_ARCH_USED}\"" )
 set_property(TARGET cudasift PROPERTY CUDA_ARCHITECTURES ${CUDASIFT_CUDA_ARCH_USED})
-
+set_property(TARGET cudasift PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 add_executable(cudasift_app 
     ${CMAKE_CURRENT_LIST_DIR}/app/mainSift.cpp
 )
 
-target_link_libraries(cudasift_app PRIVATE cudasift)
+target_link_libraries(cudasift_app PRIVATE cudasift ${OpenCV_LIBS})
 
 #install(FILES 
 #  ${cuda_sources} 

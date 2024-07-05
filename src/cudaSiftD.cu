@@ -4,6 +4,7 @@
 #include <cudasift/cudautils.h>
 #include <cudasift/cudaSiftD.h>
 #include <cudasift/cudaSift.h>
+#include "siftDeviceResidents.cuh"
 //#include "cudautils.h"
 //#include "cudaSiftD.h"
 //#include "cudaSift.h"
@@ -12,22 +13,26 @@
 // Kernel configuration
 ///////////////////////////////////////////////////////////////////////////////
 
-__constant__ int d_MaxNumPoints;
-__device__ unsigned int d_PointCounter[8*2+1];
-__constant__ float d_ScaleDownKernel[5]; 
-__constant__ float d_LowPassKernel[2*LOWPASS_R+1]; 
-__constant__ float d_LaplaceKernel[8*12*16]; 
+//__constant__ int d_MaxNumPoints;
+//__device__ unsigned int d_PointCounter[8*2+1];
+//__constant__ float d_ScaleDownKernel[5]; 
+//__constant__ float d_LowPassKernel[2*LOWPASS_R+1]; 
+//__constant__ float d_LaplaceKernel[8*12*16]; 
 
 ///////////////////////////////////////////////////////////////////////////////
 // Lowpass filter and subsample image
 ///////////////////////////////////////////////////////////////////////////////
 __global__ void ScaleDownDenseShift(float *d_Result, float *d_Data, int width, int pitch, int height, int newpitch)
 {
-#define BW (SCALEDOWN_W+4)
-#define BH (SCALEDOWN_H+4)
-#define W2 (SCALEDOWN_W/2)
-#define H2 (SCALEDOWN_H/2)
-  __shared__ float brows[BH*BW];
+//#define BW (SCALEDOWN_W+4)
+//#define BH (SCALEDOWN_H+4)
+//#define W2 (SCALEDOWN_W/2)
+//#define H2 (SCALEDOWN_H/2)
+  constexpr const unsigned int BW= (SCALEDOWN_W+4);
+  constexpr const unsigned int BH= (SCALEDOWN_H+4);
+  constexpr const unsigned int W2= (SCALEDOWN_W/2);
+  constexpr const unsigned int H2= (SCALEDOWN_H/2);
+  __shared__ float brows[ BH * BW ];
   const int tx = threadIdx.x;
   const int ty = threadIdx.y;
   const int xp = blockIdx.x*SCALEDOWN_W + tx;
@@ -52,11 +57,15 @@ __global__ void ScaleDownDenseShift(float *d_Result, float *d_Data, int width, i
 
 __global__ void ScaleDownDense(float *d_Result, float *d_Data, int width, int pitch, int height, int newpitch)
 {
-#define BW (SCALEDOWN_W+4)
-#define BH (SCALEDOWN_H+4)
-#define W2 (SCALEDOWN_W/2)
-#define H2 (SCALEDOWN_H/2)
-  __shared__ float irows[BH*BW]; 
+//#define BW (SCALEDOWN_W+4)
+//#define BH (SCALEDOWN_H+4)
+//#define W2 (SCALEDOWN_W/2)
+//#define H2 (SCALEDOWN_H/2)
+  constexpr const unsigned int BW= (SCALEDOWN_W+4);
+  constexpr const unsigned int BH= (SCALEDOWN_H+4);
+  constexpr const unsigned int W2= (SCALEDOWN_W/2);
+  constexpr const unsigned int H2= (SCALEDOWN_H/2);
+  __shared__ float irows[ BH * BW ];
   __shared__ float brows[BH*W2];
   const int tx = threadIdx.x;
   const int ty = threadIdx.y;
@@ -89,7 +98,7 @@ __global__ void ScaleDown(float *d_Result, float *d_Data, int width, int pitch, 
   __shared__ float brow[5*(SCALEDOWN_W/2)];
   __shared__ int yRead[SCALEDOWN_H+4];
   __shared__ int yWrite[SCALEDOWN_H+4];
-  #define dx2 (SCALEDOWN_W/2)
+  constexpr const unsigned int dx2 = ( SCALEDOWN_W / 2 );
   const int tx = threadIdx.x;
   const int tx0 = tx + 0*dx2;
   const int tx1 = tx + 1*dx2;
@@ -663,7 +672,7 @@ __device__ void ExtractSiftDescriptor(cudaTextureObject_t texObj, SiftPoint *d_s
   __syncthreads();
 
   // Compute angles and gradients
-  float theta = 2.0f*3.1415f/360.0f*d_sift[bx].orientation;
+  float theta = 2.0f*M_PI/360.0f*d_sift[bx].orientation;
   float sina = sinf(theta);           // cosa -sina
   float cosa = cosf(theta);           // sina  cosa
   float scale = 12.0f/16.0f*d_sift[bx].scale;
@@ -846,10 +855,13 @@ __global__ void ComputeOrientations(cudaTextureObject_t texObj, SiftPoint *d_Sif
 // With constant number of blocks
 __global__ void ComputeOrientationsCONSTNew(float *image, int w, int p, int h, SiftPoint *d_Sift, int octave)
 {
-#define RAD 9
-#define WID (2*RAD + 1)
-#define LEN 32                                   //%%%% Note: Lowe suggests 36, not 32
-  __shared__ float img[WID][WID], tmp[WID][WID];
+//#define RAD 9
+//#define WID (2*RAD + 1)
+//#define LEN 32                                   //%%%% Note: Lowe suggests 36, not 32
+  constexpr const unsigned int RAD= 9           ;
+  constexpr const unsigned int WID= (2*RAD + 1) ;
+  constexpr const unsigned int LEN= 32          ;                         //%%%% Note: Lowe suggests 36, not 32
+  __shared__ float img[ WID ][ WID ] , tmp[ WID ][ WID ];
   __shared__ float hist[2*LEN];
   __shared__ float gaussx[WID], gaussy[WID];
   const int tx = threadIdx.x;
@@ -965,9 +977,9 @@ __global__ void ComputeOrientationsCONSTNew(float *image, int w, int p, int h, S
       }
     }
   }
-#undef RAD
-#undef WID
-#undef LEN
+//#undef RAD
+//#undef WID
+//#undef LEN
 } 
 
 // With constant number of blocks
@@ -1158,7 +1170,8 @@ __global__ void OrientAndExtractCONST(cudaTextureObject_t texObj, SiftPoint *d_S
   
 __global__ void FindPointsMultiTest(float *d_Data0, SiftPoint *d_Sift, int width, int pitch, int height, float subsampling, float lowestScale, float thresh, float factor, float edgeLimit, int octave)
 {
-  #define MEMWID (MINMAX_W + 2)
+    //#define MEMWID (MINMAX_W + 2)
+  constexpr const unsigned int MEMWID = ( MINMAX_W + 2 );
   __shared__ unsigned int cnt;
   __shared__ unsigned short points[3*MEMWID];
 
@@ -1293,8 +1306,9 @@ __global__ void FindPointsMultiTest(float *d_Data0, SiftPoint *d_Sift, int width
 
 __global__ void FindPointsMultiNew(float *d_Data0, SiftPoint *d_Sift, int width, int pitch, int height, float subsampling, float lowestScale, float thresh, float factor, float edgeLimit, int octave)
 {
-  #define MEMWID (MINMAX_W + 2)
-  __shared__ unsigned short points[2*MEMWID];
+  //#define MEMWID (MINMAX_W + 2)
+  constexpr const unsigned int MEMWID = ( MINMAX_W + 2 );
+  __shared__ unsigned short points[ 2 * MEMWID ];
   
   if (blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==0) {
     atomicMax(&d_PointCounter[2*octave+0], d_PointCounter[2*octave-1]);
@@ -1434,9 +1448,10 @@ __global__ void FindPointsMultiNew(float *d_Data0, SiftPoint *d_Sift, int width,
 
 __global__ void FindPointsMulti(float *d_Data0, SiftPoint *d_Sift, int width, int pitch, int height, float subsampling, float lowestScale, float thresh, float factor, float edgeLimit, int octave)
 {
-  #define MEMWID (MINMAX_W + 2)
+//  #define MEMWID (MINMAX_W + 2)
+  constexpr const unsigned int MEMWID = ( MINMAX_W + 2 );
   __shared__ unsigned int cnt;
-  __shared__ unsigned short points[3*MEMWID];
+  __shared__ unsigned short points[ 3 * MEMWID ];
 
   if (blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==0) {
     atomicMax(&d_PointCounter[2*octave+0], d_PointCounter[2*octave-1]);
@@ -1577,8 +1592,9 @@ __global__ void FindPointsMulti(float *d_Data0, SiftPoint *d_Sift, int width, in
 
 __global__ void FindPointsMultiOld(float *d_Data0, SiftPoint *d_Sift, int width, int pitch, int height, float subsampling, float lowestScale, float thresh, float factor, float edgeLimit, int octave)
 {
-  #define MEMWID (MINMAX_W + 2)
-  __shared__ float ymin1[MEMWID], ymin2[MEMWID], ymin3[MEMWID];
+//#define MEMWID (MINMAX_W + 2)
+  constexpr const unsigned int  MEMWID = ( MINMAX_W + 2 );
+  __shared__ float ymin1[ MEMWID ] , ymin2[ MEMWID ] , ymin3[ MEMWID ];
   __shared__ float ymax1[MEMWID], ymax2[MEMWID], ymax3[MEMWID];
   __shared__ unsigned int cnt;
   __shared__ unsigned short points[3*MEMWID];

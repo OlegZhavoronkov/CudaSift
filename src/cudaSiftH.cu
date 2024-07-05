@@ -13,9 +13,9 @@
 #include <cudasift/cudaSift.h>
 #include <cudasift/cudaSiftD.h>
 #include <cudasift/cudaSiftH.h>
+#include "siftDeviceResidents.cuh"
 
-
-#include "cudaSiftD.cu"
+//#include "cudaSiftD.cu"
 
 void InitCuda(int devNum)
 {
