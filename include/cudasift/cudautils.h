@@ -9,9 +9,6 @@
 #include <intrin.h>
 #endif
 
-#define safeCall(err)       __safeCall(err, __FILE__, __LINE__)
-#define safeThreadSync()    __safeThreadSync(__FILE__, __LINE__)
-#define checkMsg(msg)       __checkMsg(msg, __FILE__, __LINE__)
 
 inline void __safeCall(cudaError err, const char *file, const int line)
 {
@@ -38,6 +35,9 @@ inline void __checkMsg(const char *errorMessage, const char *file, const int lin
     exit(-1);
   }
 }
+#define safeCall(err)       __safeCall(err, __FILE__, __LINE__)
+#define safeThreadSync()    __safeThreadSync(__FILE__, __LINE__)
+#define checkMsg(msg)       __checkMsg(msg, __FILE__, __LINE__)
 
 inline bool deviceInit(int dev)
 {

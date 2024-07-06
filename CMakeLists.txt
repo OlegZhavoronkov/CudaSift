@@ -100,6 +100,7 @@ set (cuda_sift_hdrs
 
 set(sift_sources
         ${CMAKE_CURRENT_LIST_DIR}/src/geomFuncs.cpp  
+        ${CMAKE_CURRENT_LIST_DIR}/src/cudaSiftH.cpp
 )
 
 #include_directories(
@@ -121,7 +122,9 @@ target_sources(cudasift
     ${sift_sources}
 )
 
-target_include_directories(cudasift PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include/)
+target_include_directories(cudasift 
+    PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include/
+    PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
 set_target_properties(cudasift PROPERTIES
   COMPILE_FLAGS "${EXTRA_CXX_FLAGS}"			   
