@@ -79,12 +79,16 @@ void ExtractSift(SiftData &siftData, CudaImage &img, int numOctaves, double init
   } 
   
   if (!tempMemory)
+  {
     safeCall(cudaFree(memoryTmp));
+  }
 #ifdef MANAGEDMEM
   safeCall(cudaDeviceSynchronize());
 #else
   if (siftData.h_data)
+  {
     safeCall(cudaMemcpy(siftData.h_data, siftData.d_data, sizeof(SiftPoint)*siftData.numPts, cudaMemcpyDeviceToHost));
+  }
 #endif
   double totTime = timer.read();
   printf("Incl prefiltering & memcpy =  %.2f ms %d\n\n", totTime, siftData.numPts);
@@ -108,7 +112,9 @@ double ScaleDown(CudaImage &res, CudaImage &src, float variance)
       kernelSum += h_Kernel[j];
     }
     for (int j=0;j<5;j++)
+    {
       h_Kernel[j] /= kernelSum;  
+    }
     safeCall(cudaMemcpyToSymbol(d_ScaleDownKernel, h_Kernel, 5*sizeof(float)));
     oldVariance = variance;
   }
@@ -203,7 +209,9 @@ double LowPass(CudaImage &res, CudaImage &src, float scale)
       kernelSum += kernel[j+LOWPASS_R]; 
     }
     for (int j=-LOWPASS_R;j<=LOWPASS_R;j++) 
+    {
       kernel[j+LOWPASS_R] /= kernelSum;  
+    }
     safeCall(cudaMemcpyToSymbol(d_LowPassKernel, kernel, (2*LOWPASS_R+1)*sizeof(float)));
     oldScale = scale;
   }  

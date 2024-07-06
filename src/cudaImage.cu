@@ -41,13 +41,19 @@ CudaImage::CudaImage() :
 CudaImage::~CudaImage()
 {
   if (d_internalAlloc && d_data!=NULL) 
+  {
     safeCall(cudaFree(d_data));
+  }
   d_data = NULL;
   if (h_internalAlloc && h_data!=NULL) 
+  {
     free(h_data);
+  }
   h_data = NULL;
-  if (t_data!=NULL) 
+  if (t_data!=NULL)
+  {
     safeCall(cudaFreeArray((cudaArray *)t_data));
+  } 
   t_data = NULL;
 }
   
@@ -55,8 +61,10 @@ double CudaImage::Download()
 {
   TimerGPU timer(0);
   int p = sizeof(float)*pitch;
-  if (d_data!=NULL && h_data!=NULL) 
+  if (d_data!=NULL && h_data!=NULL)
+  {
     safeCall(cudaMemcpy2D(d_data, p, h_data, sizeof(float)*width, sizeof(float)*width, height, cudaMemcpyHostToDevice));
+  } 
   double gpuTime = timer.read();
 #ifdef VERBOSE
   printf("Download time =               %.2f ms\n", gpuTime);
@@ -82,7 +90,9 @@ double CudaImage::InitTexture()
   cudaChannelFormatDesc t_desc = cudaCreateChannelDesc<float>(); 
   safeCall(cudaMallocArray((cudaArray **)&t_data, &t_desc, pitch, height)); 
   if (t_data==NULL)
+  {
     printf("Failed to allocated texture data\n");
+  }
   double gpuTime = timer.read();
 #ifdef VERBOSE
   printf("InitTexture time =            %.2f ms\n", gpuTime);
