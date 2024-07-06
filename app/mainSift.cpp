@@ -12,6 +12,9 @@
 
 #include <cudasift/cudaImage.h>
 #include <cudasift/cudaSift.h>
+#include <filesystem>
+using namespace std::filesystem;
+const std::string test_data_folder = TEST_DATA_FOLDER;
 
 int ImproveHomography(SiftData &data, float *homography, int numLoops, float minScore, float maxAmbiguity, float thresh);
 void PrintMatchData(SiftData &siftData1, SiftData &siftData2, CudaImage &img);
@@ -36,8 +39,8 @@ int main(int argc, char **argv)
     cv::imread("data/left.pgm", 0).convertTo(limg, CV_32FC1);
     cv::imread("data/righ.pgm", 0).convertTo(rimg, CV_32FC1);
   } else {
-    cv::imread("data/img1.png", 0).convertTo(limg, CV_32FC1);
-    cv::imread("data/img2.png", 0).convertTo(rimg, CV_32FC1);
+    cv::imread( path(test_data_folder) / "img1.png", 0).convertTo(limg, CV_32FC1);
+    cv::imread(path(test_data_folder) / "img2.png", 0).convertTo(rimg, CV_32FC1);
   }
   //cv::flip(limg, rimg, -1);
   unsigned int w = limg.cols;

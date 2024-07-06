@@ -45,7 +45,12 @@ else()
             message("CUDASIFT_CUDA_ARCH_USED defaulted to \"${CUDASIFT_CUDA_ARCH_USED}\"")
             #set(CMAKE_CUDA_ARCHITECTURES 75)
         endif()
+        if("${CMAKE_CUDA_COMPILER}" STREQUAL "CMAKE_CUDA_COMPILER-NOTFOUND" OR "${CMAKE_CUDA_COMPILER}" STREQUAL "NOTFOUND")
+            set(CMAKE_CUDA_COMPILER ${CUDAToolkit_NVCC_EXECUTABLE})
+        endif()
+        set(CMAKE_CUDA_ARCHITECTURES ${CUDASIFT_CUDA_ARCH_USED})
     endif()
+    message("enabling CUDA language \n$\{CMAKE_CUDA_ARCHITECTURES\} \"${CMAKE_CUDA_ARCHITECTURES}\" \n$\{CMAKE_CUDA_COMPILER\} \"${CMAKE_CUDA_COMPILER}\" \n$\{CUDAToolkit_NVCC_EXECUTABLE\} \"${CUDAToolkit_NVCC_EXECUTABLE}\"")
     enable_language(CUDA)
 endif(NOT CUDAToolkit_FOUND)
 
@@ -138,7 +143,7 @@ set_property(TARGET cudasift PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 add_executable(cudasift_app 
     ${CMAKE_CURRENT_LIST_DIR}/app/mainSift.cpp
 )
-
+set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/app/mainSift.cpp PROPERTIES COMPILE_DEFINITIONS "TEST_DATA_FOLDER=\"${CMAKE_CURRENT_LIST_DIR}/data\"")
 target_link_libraries(cudasift_app PRIVATE cudasift ${OpenCV_LIBS})
 
 #install(FILES 
