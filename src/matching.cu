@@ -15,20 +15,25 @@ __global__ void MatchSiftPoints(SiftPoint *sift1, SiftPoint *sift2, float *corrD
   const float *ptr1 = sift1[p1].data;
   const float *ptr2 = sift2[p2].data;
   const int i = 16*ty + tx;
-  if (ty<8)
+  if (ty<8){
     siftPoint[i] = ptr1[i];
+  }
   __syncthreads();
   float sum = 0.0f;
-  if (p2<numPts2)
-    for (int j=0;j<8;j++)
+  if (p2<numPts2){
+    for (int j=0;j<8;j++){
       sum += siftPoint[16*j+tx] * ptr2[16*j+tx];
+    }
+  }
   sums[i] = sum;
   __syncthreads();
-  if (tx<8)
+  if (tx<8){
     sums[i] += sums[i+8];
+  }
   __syncthreads();
-  if (tx<4)
+  if (tx<4){
     sums[i] += sums[i+4];
+  }
   __syncthreads();
   if (ty==0) {
     sum = sums[16*tx+0] + sums[16*tx+1] + sums[16*tx+2] + sums[16*tx+3];
@@ -59,8 +64,9 @@ __global__ void MatchSiftPoints2(SiftPoint *sift1, SiftPoint *sift2, float *corr
     int itx = (i + tx)&127; // avoid bank conflicts
     sum += pt1[itx]*pt2[itx];
   }
-  if (p1<numPts1)
+  if (p1<numPts1){
     corrData[p1*gridDim.y*16 + p2] = (p2<numPts2 ? sum : -1.0f);
+  }
 }
 
 __global__ void FindMaxCorr(float *corrData, SiftPoint *sift1, SiftPoint *sift2, int numPts1, int corrWidth, int siftSize)
@@ -84,8 +90,10 @@ __global__ void FindMaxCorr(float *corrData, SiftPoint *sift1, SiftPoint *sift2,
       maxScor2[idx] = maxScore[idx];
       maxScore[idx] = val;
       maxIndex[idx] = i;
-    } else if (val>maxScor2[idx])
+    } 
+    else if (val>maxScor2[idx]){
       maxScor2[idx] = val;
+    }
   }
   __syncthreads();
   for (int len=8;len>0;len/=2) {
@@ -93,14 +101,17 @@ __global__ void FindMaxCorr(float *corrData, SiftPoint *sift1, SiftPoint *sift2,
       float val = maxScore[idx+len];
       int i = maxIndex[idx+len];
       if (val>maxScore[idx]) {
-	maxScor2[idx] = maxScore[idx];
-	maxScore[idx] = val;
-	maxIndex[idx] = i;
-      } else if (val>maxScor2[idx])
-	maxScor2[idx] = val;
+	    maxScor2[idx] = maxScore[idx];
+	    maxScore[idx] = val;
+	    maxIndex[idx] = i;
+      } 
+      else if (val>maxScor2[idx]){
+	    maxScor2[idx] = val;
+      }
       float va2 = maxScor2[idx+len];
-      if (va2>maxScor2[idx])
-	maxScor2[idx] = va2;
+      if (va2>maxScor2[idx]){
+	    maxScor2[idx] = va2;
+      }
     }
     __syncthreads();
   }
@@ -135,33 +146,37 @@ __global__ void FindMaxCorr3(float *corrData, SiftPoint *sift1, SiftPoint *sift2
     for (int p2 = tx; p2 < numPts2; p2 += 16) {
       float *pt2 = sift2[p2].data;
       float sum = 0.0f;
-      for (int i = 0; i < 128; i++) 
-	sum += pt1[i] * pt2[i];
-      if (sum > corrs[tx]) {
-	corrs[tx + 16] = corrs[tx];
-	corrs[tx] = sum;
-	maxIndex[idx] = p2;
+      for (int i = 0; i < 128; i++) {
+	    sum += pt1[i] * pt2[i];
       }
-      else if (sum > corrs[tx + 16])
-	corrs[tx + 16] = sum;
+      if (sum > corrs[tx]) {
+	    corrs[tx + 16] = corrs[tx];
+	    corrs[tx] = sum;
+	    maxIndex[idx] = p2;
+      }
+      else if (sum > corrs[tx + 16]){
+	    corrs[tx + 16] = sum;
+      }
     }
   }
   __syncthreads();
   if (p1 < numPts1) {
     for (int len = 8; len > 0; len /= 2) {
       if (tx < len) {
-	float val = corrs[tx + len];
-	int i = maxIndex[idx + len];
-	if (val > corrs[tx]) {
-	  corrs[tx + 16] = corrs[tx];
-	  corrs[tx] = val;
-	  maxIndex[idx] = i;
-	}
-	else if (val > corrs[tx + 16])
-	  corrs[tx + 16] = val;
-	float va2 = corrs[tx + 16 + len];
-	if (va2 > corrs[tx + 16])
-	  corrs[tx + 16] = va2;
+	    float val = corrs[tx + len];
+	    int i = maxIndex[idx + len];
+	    if (val > corrs[tx]) {
+	      corrs[tx + 16] = corrs[tx];
+	      corrs[tx] = val;
+	      maxIndex[idx] = i;
+	    }
+	    else if (val > corrs[tx + 16]){
+	      corrs[tx + 16] = val;
+        }
+	    float va2 = corrs[tx + 16 + len];
+	    if (va2 > corrs[tx + 16]){
+	      corrs[tx + 16] = va2;
+        }
       }
       __syncthreads();
     }
@@ -189,8 +204,9 @@ __global__ void FindMaxCorr2( SiftPoint* sift1 , SiftPoint* sift2 , int numPts1 
   __shared__ float maxScor2[FMC2H]; 
   __shared__ int maxIndex[FMC2H]; 
   const int p1 = blockIdx.x;
-  if (p1>=numPts1)
+  if (p1>=numPts1){
     return;
+  }
   const int tx = threadIdx.x;
   const int ty = threadIdx.y;
   const int idx = ty*FMC2W + tx;
@@ -201,23 +217,28 @@ __global__ void FindMaxCorr2( SiftPoint* sift1 , SiftPoint* sift2 , int numPts1 
   }
   __syncthreads();
   const float *pt1 = sift1[p1].data;
-  for (int i=idx;i<128;i+=FMC2W*FMC2H)
+  for (int i=idx;i<128;i+=FMC2W*FMC2H){
     siftPoint[i] = pt1[i];
+  }
   __syncthreads();
   for (int p2=ty;p2<numPts2;p2+=FMC2H) {
     const float *pt2 = sift2[p2].data;
     float sum = 0.0f;
-    for (int j=tx;j<128;j+=FMC2W)
+    for (int j=tx;j<128;j+=FMC2W){
       sum += siftPoint[j] * pt2[j];
-    for (int j=FMC2W/2;j>0;j/=2)
+    }
+    for (int j=FMC2W/2;j>0;j/=2){
       sum += ShiftDown(sum, j);
+    }
     if (tx==0) {
       if (sum>maxScore[ty]) {
-	maxScor2[ty] = maxScore[ty];
-	maxScore[ty] = sum;
-	maxIndex[ty] = p2;
-      } else if (sum>maxScor2[ty])
-	maxScor2[ty] = sum;
+	    maxScor2[ty] = maxScore[ty];
+	    maxScore[ty] = sum;
+	    maxIndex[ty] = p2;
+      } 
+      else if (sum>maxScor2[ty]){
+	    maxScor2[ty] = sum;
+      }
     }
   }
   __syncthreads();
@@ -226,14 +247,17 @@ __global__ void FindMaxCorr2( SiftPoint* sift1 , SiftPoint* sift2 , int numPts1 
       float val = maxScore[tx+len];
       int p2 = maxIndex[tx+len];
       if (val>maxScore[tx]) {
-	maxScor2[tx] = maxScore[tx];
-	maxScore[tx] = val;
-	maxIndex[tx] = p2;
-      } else if (val>maxScor2[tx])
-	maxScor2[tx] = val;
+	    maxScor2[tx] = maxScore[tx];
+	    maxScore[tx] = val;
+	    maxIndex[tx] = p2;
+      } 
+      else if (val>maxScor2[tx]){
+	    maxScor2[tx] = val;
+      }
       float va2 = maxScor2[tx+len];
-      if (va2>maxScor2[tx])
-	maxScor2[tx] = va2;
+      if (va2>maxScor2[tx]){
+	    maxScor2[tx] = va2;
+      }
     }
     __syncthreads();
   }
@@ -261,23 +285,28 @@ __global__ void FindMaxCorr4(SiftPoint *sift1, SiftPoint *sift2, int numPts1, in
   }
   const int p1 = blockIdx.x*FMC2H + ty;
   const float *pt1 = sift1[p1].data;
-  for (int j=tx;j<128;j+=FMC2W)
+  for (int j=tx;j<128;j+=FMC2W){
     siftPoint[128*ty + j] = pt1[j];
+  }
   __syncthreads();
   for (int p2=0;p2<numPts2;p2++) {
     const float *pt2 = sift2[p2].data;
     float sum = 0.0f;
-    for (int j=tx;j<128;j+=FMC2W)
+    for (int j=tx;j<128;j+=FMC2W){
       sum += siftPoint[128*ty + j] * pt2[j]; 
-    for (int j=FMC2W/2;j>0;j/=2)
+    }
+    for (int j=FMC2W/2;j>0;j/=2){
       sum += ShiftDown(sum, j);
+    }
     if (tx==0) {
       if (sum>maxScore[ty]) {
-	maxScor2[ty] = maxScore[ty];
-	maxScore[ty] = sum;
-	maxIndex[ty] = p2;
-      } else if (sum>maxScor2[ty])
-	maxScor2[ty] = sum;
+	    maxScor2[ty] = maxScore[ty];
+	    maxScore[ty] = sum;
+	    maxIndex[ty] = p2;
+      } 
+      else if (sum>maxScor2[ty]){
+	    maxScor2[ty] = sum;
+      }
     }
   }
   __syncthreads();
@@ -312,8 +341,9 @@ __global__ void FindMaxCorr10(SiftPoint *sift1, SiftPoint *sift2, int numPts1, i
   int bp1 = M7W*blockIdx.x;
   for (int j=ty;j<M7W;j+=M7H/M7R) {    
     int p1 = min(bp1 + j, numPts1 - 1);
-    for (int d=tx;d<NDIM/4;d+=M7W)
+    for (int d=tx;d<NDIM/4;d+=M7W){
       buffer1[j*NDIM/4 + (d + j)%(NDIM/4)] = ((float4*)&sift1[p1].data)[d];
+    }
   }
       
   float max_score[NRX];
@@ -330,39 +360,45 @@ __global__ void FindMaxCorr10(SiftPoint *sift1, SiftPoint *sift2, int numPts1, i
   for (int bp2=0;bp2<numPts2 - M7H + 1;bp2+=M7H) {
     for (int j=ty;j<M7H;j+=M7H/M7R) {      
       int p2 = min(bp2 + j, numPts2 - 1);
-      for (int d=tx;d<NDIM/4;d+=M7W)
-	buffer2[j*NDIM/4 + d] = ((float4*)&sift2[p2].data)[d];
+      for (int d=tx;d<NDIM/4;d+=M7W){
+	    buffer2[j*NDIM/4 + d] = ((float4*)&sift2[p2].data)[d];
+      }
     }
     __syncthreads();
 
     if (idx<M7W*M7H/M7R/NRX) {
       float score[M7R][NRX];                                    
-      for (int dy=0;dy<M7R;dy++)
-	for (int i=0;i<NRX;i++)
-	  score[dy][i] = 0.0f;
+      for (int dy=0;dy<M7R;dy++){
+	    for (int i=0;i<NRX;i++){
+	      score[dy][i] = 0.0f;
+        }
+      }
       for (int d=0;d<NDIM/4;d++) {
-	float4 v1[NRX];
-	for (int i=0;i<NRX;i++) 
-	  v1[i] = buffer1[((M7W/NRX)*i + ix)*NDIM/4 + (d + (M7W/NRX)*i + ix)%(NDIM/4)];
-	for (int dy=0;dy<M7R;dy++) {
-	  float4 v2 = buffer2[(M7R*iy + dy)*(NDIM/4) + d];    
-	  for (int i=0;i<NRX;i++) {
-	    score[dy][i] += v1[i].x*v2.x;
-	    score[dy][i] += v1[i].y*v2.y;
-	    score[dy][i] += v1[i].z*v2.z;
-	    score[dy][i] += v1[i].w*v2.w;
-	  }
-	}
+	    float4 v1[NRX];
+	    for (int i=0;i<NRX;i++) {
+	      v1[i] = buffer1[((M7W/NRX)*i + ix)*NDIM/4 + (d + (M7W/NRX)*i + ix)%(NDIM/4)];
+        }
+	    for (int dy=0;dy<M7R;dy++) {
+	      float4 v2 = buffer2[(M7R*iy + dy)*(NDIM/4) + d];    
+	      for (int i=0;i<NRX;i++) {
+	        score[dy][i] += v1[i].x*v2.x;
+	        score[dy][i] += v1[i].y*v2.y;
+	        score[dy][i] += v1[i].z*v2.z;
+	        score[dy][i] += v1[i].w*v2.w;
+	      }
+	    }
       }
       for (int dy=0;dy<M7R;dy++) {
-	for (int i=0;i<NRX;i++) {
-	  if (score[dy][i]>max_score[i]) {
-	    sec_score[i] = max_score[i];
-	    max_score[i] = score[dy][i];     
-	    index[i] = min(bp2 + M7R*iy + dy, numPts2-1);
-	  } else if (score[dy][i]>sec_score[i])
-	    sec_score[i] = score[dy][i]; 
-	}
+	    for (int i=0;i<NRX;i++) {
+	      if (score[dy][i]>max_score[i]) {
+	        sec_score[i] = max_score[i];
+	        max_score[i] = score[dy][i];     
+	        index[i] = min(bp2 + M7R*iy + dy, numPts2-1);
+	      } 
+          else if (score[dy][i]>sec_score[i]){
+	        sec_score[i] = score[dy][i]; 
+          }
+	    }
       }
     }
     __syncthreads();
@@ -384,15 +420,17 @@ __global__ void FindMaxCorr10(SiftPoint *sift1, SiftPoint *sift2, int numPts1, i
     float max_score = scores1[tx];
     float sec_score = scores2[tx];
     int index = indices[tx];
-    for (int y=0;y<M7H/M7R;y++)
+    for (int y=0;y<M7H/M7R;y++){
       if (index != indices[y*M7W + tx]) {
-	if (scores1[y*M7W + tx]>max_score) {
-	  sec_score = max(max_score, sec_score);
-	  max_score = scores1[y*M7W + tx]; 
-	  index = indices[y*M7W + tx];
-	} else if (scores1[y*M7W + tx]>sec_score)
-	  sec_score = scores1[y*M7W + tx];
+	    if (scores1[y*M7W + tx]>max_score) {
+	      sec_score = max(max_score, sec_score);
+	      max_score = scores1[y*M7W + tx]; 
+	      index = indices[y*M7W + tx];
+	    } else if (scores1[y*M7W + tx]>sec_score){
+	      sec_score = scores1[y*M7W + tx];
+        }
       }
+    }
     sift1[bp1 + tx].score = max_score;
     sift1[bp1 + tx].match = index;
     sift1[bp1 + tx].match_xpos = sift2[index].xpos;
@@ -435,40 +473,50 @@ __global__ void FindMaxCorr9(SiftPoint *sift1, SiftPoint *sift2, int numPts1, in
       pts2 = (float4*)sift2[p2l].data;
     }
     float sums[FMC_TW*FMC_TH];
-    for (int i=0;i<FMC_TW*FMC_TH;i++) 
+    for (int i=0;i<FMC_TW*FMC_TH;i++) {
       sums[i] = 0.0f;
+    }
 
-    if (idx<FMC_BW)
-      for (int i=0;i<FMC_BD/2;i++) 
-	siftParts1[(i + 0)*FMC_BW + idx] = pts1[0 + i];
-    if (idx<FMC_BH)
-      for (int i=0;i<FMC_BD/2;i++) 
-	siftParts2[(i + 0)*FMC_BH + idx] = pts2[0 + i];
+    if (idx<FMC_BW){
+      for (int i=0;i<FMC_BD/2;i++) {
+	    siftParts1[(i + 0)*FMC_BW + idx] = pts1[0 + i];
+      }
+    }
+    if (idx<FMC_BH){
+      for (int i=0;i<FMC_BD/2;i++) {
+	    siftParts2[(i + 0)*FMC_BH + idx] = pts2[0 + i];
+      }
+    }
     __syncthreads();
     
     int b = FMC_BD/2;
     for (int d=FMC_BD/2;d<32;d+=FMC_BD/2) {
-      if (idx<FMC_BW)
-	for (int i=0;i<FMC_BD/2;i++) 
-	  siftParts1[(i + b)*FMC_BW + idx] = pts1[d + i];
-      if (idx<FMC_BH)
-	for (int i=0;i<FMC_BD/2;i++) 
-	  siftParts2[(i + b)*FMC_BH + idx] = pts2[d + i];
+      if (idx<FMC_BW){
+	    for (int i=0;i<FMC_BD/2;i++) {
+	      siftParts1[(i + b)*FMC_BW + idx] = pts1[d + i];
+        }
+      }
+      if (idx<FMC_BH){
+	    for (int i=0;i<FMC_BD/2;i++) {
+	      siftParts2[(i + b)*FMC_BH + idx] = pts2[d + i];
+        }
+      }
 
       b ^= FMC_BD/2;
       for (int i=0;i<FMC_BD/2;i++) {
-	float4 v1[FMC_TW];
-	for (int ix=0;ix<FMC_TW;ix++)
-	  v1[ix] = siftParts1[(i + b)*FMC_BW + (tx*FMC_TW + ix)];
-	for (int iy=0;iy<FMC_TH;iy++) {
-	  float4 v2 = siftParts2[(i + b)*FMC_BH + (ty*FMC_TH + iy)];
-	  for (int ix=0;ix<FMC_TW;ix++) {
-	    sums[iy*FMC_TW + ix] += v1[ix].x * v2.x;
-	    sums[iy*FMC_TW + ix] += v1[ix].y * v2.y;
-	    sums[iy*FMC_TW + ix] += v1[ix].z * v2.z;
-	    sums[iy*FMC_TW + ix] += v1[ix].w * v2.w;
-	  }
-	}
+	    float4 v1[FMC_TW];
+	    for (int ix=0;ix<FMC_TW;ix++){
+	      v1[ix] = siftParts1[(i + b)*FMC_BW + (tx*FMC_TW + ix)];
+        }
+	    for (int iy=0;iy<FMC_TH;iy++) {
+	      float4 v2 = siftParts2[(i + b)*FMC_BH + (ty*FMC_TH + iy)];
+	      for (int ix=0;ix<FMC_TW;ix++) {
+	        sums[iy*FMC_TW + ix] += v1[ix].x * v2.x;
+	        sums[iy*FMC_TW + ix] += v1[ix].y * v2.y;
+	        sums[iy*FMC_TW + ix] += v1[ix].z * v2.z;
+	        sums[iy*FMC_TW + ix] += v1[ix].w * v2.w;
+	      }
+	    }
       }
       __syncthreads();
     }
@@ -476,34 +524,39 @@ __global__ void FindMaxCorr9(SiftPoint *sift1, SiftPoint *sift2, int numPts1, in
     b ^= FMC_BD/2;
     for (int i=0;i<FMC_BD/2;i++) {
       float4 v1[FMC_TW];
-      for (int ix=0;ix<FMC_TW;ix++)
-	v1[ix] = siftParts1[(i + b)*FMC_BW + (tx*FMC_TW + ix)];
+      for (int ix=0;ix<FMC_TW;ix++){
+	    v1[ix] = siftParts1[(i + b)*FMC_BW + (tx*FMC_TW + ix)];
+      }
       for (int iy=0;iy<FMC_TH;iy++) {
-	float4 v2 = siftParts2[(i + b)*FMC_BH + (ty*FMC_TH + iy)];
-	for (int ix=0;ix<FMC_TW;ix++) {
-	  sums[iy*FMC_TW + ix] += v1[ix].x * v2.x;
-	  sums[iy*FMC_TW + ix] += v1[ix].y * v2.y;
-	  sums[iy*FMC_TW + ix] += v1[ix].z * v2.z;
-	  sums[iy*FMC_TW + ix] += v1[ix].w * v2.w;
-	}
+	    float4 v2 = siftParts2[(i + b)*FMC_BH + (ty*FMC_TH + iy)];
+	    for (int ix=0;ix<FMC_TW;ix++) {
+	      sums[iy*FMC_TW + ix] += v1[ix].x * v2.x;
+	      sums[iy*FMC_TW + ix] += v1[ix].y * v2.y;
+	      sums[iy*FMC_TW + ix] += v1[ix].z * v2.z;
+	      sums[iy*FMC_TW + ix] += v1[ix].w * v2.w;
+	    }
       }
     }
     __syncthreads();
     
     float *blksums = (float*)siftParts1;
-    for (int iy=0;iy<FMC_TH;iy++) 
-      for (int ix=0;ix<FMC_TW;ix++) 
-	blksums[(ty*FMC_TH + iy)*FMC_BW + (tx*FMC_TW + ix)] = sums[iy*FMC_TW + ix];
+    for (int iy=0;iy<FMC_TH;iy++) {
+      for (int ix=0;ix<FMC_TW;ix++) {
+	    blksums[(ty*FMC_TH + iy)*FMC_BW + (tx*FMC_TW + ix)] = sums[iy*FMC_TW + ix];
+      }
+    }
     __syncthreads();
     if (idx<FMC_BW) { 
       for (int j=0;j<FMC_BH;j++) {
-	float sum = blksums[j*FMC_BW + idx];
-	if (sum>maxScore) { 
-	  maxScor2 = maxScore;
-	  maxScore = sum;
-	  maxIndex = min(blockIdx.y*FMC_GH + k + j, numPts2-1);
-	} else if (sum>maxScor2)
-	  maxScor2 = sum;
+	    float sum = blksums[j*FMC_BW + idx];
+	    if (sum>maxScore) { 
+	      maxScor2 = maxScore;
+	      maxScore = sum;
+	      maxIndex = min(blockIdx.y*FMC_GH + k + j, numPts2-1);
+	    } 
+        else if (sum>maxScor2){
+	      maxScor2 = sum;
+        }
       }
     }
     __syncthreads();
@@ -521,12 +574,15 @@ __global__ void FindMaxCorr9(SiftPoint *sift1, SiftPoint *sift2, int numPts1, in
       sift1[p1].match = maxIndex;
       sift1[p1].match_xpos = sift2[maxIndex].xpos;
       sift1[p1].match_ypos = sift2[maxIndex].ypos;
-    } else if (maxScore>maxScor2Old)
+    } 
+    else if (maxScore>maxScor2Old){
       sift1[p1].ambiguity = maxScore / (sift1[p1].score + 1e-6f);
+    }
   }
   __syncthreads();
-  if (idx==0)
+  if (idx==0){
     atomicExch((int* )&lock, 0);
+  }
 }
 
 __global__ void FindMaxCorr8(SiftPoint *sift1, SiftPoint *sift2, int numPts1, int numPts2)
@@ -551,47 +607,57 @@ __global__ void FindMaxCorr8(SiftPoint *sift1, SiftPoint *sift2, int numPts1, in
       pts2 = (float4*)sift2[p2l].data;
     }
     float sums[FMC_TW*FMC_TH];
-    for (int i=0;i<FMC_TW*FMC_TH;i++) 
+    for (int i=0;i<FMC_TW*FMC_TH;i++) {
       sums[i] = 0.0f;
+    }
     for (int d=0;d<32;d+=FMC_BD) {
-      if (idx<FMC_BW)
-	for (int i=0;i<FMC_BD;i++) 
-	  siftParts1[i*FMC_BW + idx] = pts1[d + i];
-      if (idx<FMC_BH)
-	for (int i=0;i<FMC_BD;i++) 
-	  siftParts2[i*FMC_BH + idx] = pts2[d + i];
+      if (idx<FMC_BW){
+	    for (int i=0;i<FMC_BD;i++) {
+	      siftParts1[i*FMC_BW + idx] = pts1[d + i];
+        }
+      }
+      if (idx<FMC_BH){
+	    for (int i=0;i<FMC_BD;i++) {
+	      siftParts2[i*FMC_BH + idx] = pts2[d + i];
+        }
+      }
       __syncthreads();
       
       for (int i=0;i<FMC_BD;i++) {
-	float4 v1[FMC_TW];
-	for (int ix=0;ix<FMC_TW;ix++)
-	  v1[ix] = siftParts1[i*FMC_BW + (tx*FMC_TW + ix)];
-	for (int iy=0;iy<FMC_TH;iy++) {
-	  float4 v2 = siftParts2[i*FMC_BH + (ty*FMC_TH + iy)];
-	  for (int ix=0;ix<FMC_TW;ix++) {
-	    sums[iy*FMC_TW + ix] += v1[ix].x * v2.x;
-	    sums[iy*FMC_TW + ix] += v1[ix].y * v2.y;
-	    sums[iy*FMC_TW + ix] += v1[ix].z * v2.z;
-	    sums[iy*FMC_TW + ix] += v1[ix].w * v2.w;
-	  }
-	}
+	    float4 v1[FMC_TW];
+	    for (int ix=0;ix<FMC_TW;ix++){
+	      v1[ix] = siftParts1[i*FMC_BW + (tx*FMC_TW + ix)];
+        }
+	    for (int iy=0;iy<FMC_TH;iy++) {
+	      float4 v2 = siftParts2[i*FMC_BH + (ty*FMC_TH + iy)];
+	      for (int ix=0;ix<FMC_TW;ix++) {
+	        sums[iy*FMC_TW + ix] += v1[ix].x * v2.x;
+	        sums[iy*FMC_TW + ix] += v1[ix].y * v2.y;
+	        sums[iy*FMC_TW + ix] += v1[ix].z * v2.z;
+	        sums[iy*FMC_TW + ix] += v1[ix].w * v2.w;
+	      }
+	    }
       }
       __syncthreads();
     }
     //float *blksums = (float*)siftParts1;
-    for (int iy=0;iy<FMC_TH;iy++) 
-      for (int ix=0;ix<FMC_TW;ix++) 
-	blksums[(ty*FMC_TH + iy)*FMC_BW + (tx*FMC_TW + ix)] = sums[iy*FMC_TW + ix];
+    for (int iy=0;iy<FMC_TH;iy++) {
+      for (int ix=0;ix<FMC_TW;ix++) {
+	    blksums[(ty*FMC_TH + iy)*FMC_BW + (tx*FMC_TW + ix)] = sums[iy*FMC_TW + ix];
+      }
+    }
     __syncthreads();
     if (idx<FMC_BW) { 
       for (int j=0;j<FMC_BH;j++) {
-	float sum = blksums[j*FMC_BW + idx];
-	if (sum>maxScore) { 
-	  maxScor2 = maxScore;
-	  maxScore = sum;
-	  maxIndex = min(blockIdx.y*FMC_GH + k + j, numPts2-1);
-	} else if (sum>maxScor2)
-	  maxScor2 = sum;
+	    float sum = blksums[j*FMC_BW + idx];
+	    if (sum>maxScore) { 
+	      maxScor2 = maxScore;
+	      maxScore = sum;
+	      maxIndex = min(blockIdx.y*FMC_GH + k + j, numPts2-1);
+	    } 
+        else if (sum>maxScor2){
+	      maxScor2 = sum;
+        }
       }
     }
     __syncthreads();
@@ -609,12 +675,15 @@ __global__ void FindMaxCorr8(SiftPoint *sift1, SiftPoint *sift2, int numPts1, in
       sift1[p1].match = maxIndex;
       sift1[p1].match_xpos = sift2[maxIndex].xpos;
       sift1[p1].match_ypos = sift2[maxIndex].ypos;
-    } else if (maxScore>maxScor2Old)
+    } 
+    else if (maxScore>maxScor2Old){
       sift1[p1].ambiguity = maxScore / (sift1[p1].score + 1e-6f);
+    }
   }
   __syncthreads();
-  if (idx==0)
+  if (idx==0){
     atomicExch((int* )&lock, 0);
+  }
 }
 
 __global__ void FindMaxCorr7(SiftPoint *sift1, SiftPoint *sift2, int numPts1, int numPts2)
@@ -635,9 +704,11 @@ __global__ void FindMaxCorr7(SiftPoint *sift1, SiftPoint *sift2, int numPts1, in
     const float4 *p2l4 = (float4*)sift2[p2l].data;
 #define NUM 4
     float sum[NUM];
-    if (ty<(16/NUM))
-      for (int l=0;l<NUM;l++)
-	sum[l] = 0.0f;
+    if (ty<(16/NUM)){
+      for (int l=0;l<NUM;l++){
+	    sum[l] = 0.0f;
+      }
+    }
     __syncthreads();
     for (int i=0;i<2;i++) {
       pts1[17*tx + ty] = p1l4[i*16 + tx];
@@ -645,34 +716,38 @@ __global__ void FindMaxCorr7(SiftPoint *sift1, SiftPoint *sift2, int numPts1, in
       __syncthreads(); 
       if (ty<(16/NUM)) {
 #pragma unroll
-	for (int j=0;j<16;j++) {
-	  float4 p1v = pts1[17* j + tx];
+	    for (int j=0;j<16;j++) {
+	      float4 p1v = pts1[17* j + tx];
 #pragma unroll
-	  for (int l=0;l<NUM;l++) {
-	    float4 p2v = pts2[16*(ty + l*(16/NUM)) +  j];
-	    sum[l] += p1v.x * p2v.x;
-	    sum[l] += p1v.y * p2v.y;
-	    sum[l] += p1v.z * p2v.z;
-	    sum[l] += p1v.w * p2v.w;
-	  }
-	}
+	      for (int l=0;l<NUM;l++) {
+	        float4 p2v = pts2[16*(ty + l*(16/NUM)) +  j];
+	        sum[l] += p1v.x * p2v.x;
+	        sum[l] += p1v.y * p2v.y;
+	        sum[l] += p1v.z * p2v.z;
+	        sum[l] += p1v.w * p2v.w;
+	      }
+	    }
       }
       __syncthreads();
     }
     float *sums = siftParts1;
-    if (ty<(16/NUM))
-      for (int l=0;l<NUM;l++) 
-	sums[16*(ty + l*(16/NUM)) + tx] = sum[l];
+    if (ty<(16/NUM)){
+      for (int l=0;l<NUM;l++) {
+	    sums[16*(ty + l*(16/NUM)) + tx] = sum[l];
+      }
+    }
     __syncthreads();
     if (ty==0) { 
       for (int j=0;j<16;j++) {
-	float sum = sums[16*j + tx];
-	if (sum>maxScore) { 
-	  maxScor2 = maxScore;
-	  maxScore = sum;
-	  maxIndex = min(blockIdx.y*512 +  k*16 + j, numPts2-1);
-	} else if (sum>maxScor2)
-	  maxScor2 = sum;
+	    float sum = sums[16*j + tx];
+	    if (sum>maxScore) { 
+	      maxScor2 = maxScore;
+	      maxScore = sum;
+	      maxIndex = min(blockIdx.y*512 +  k*16 + j, numPts2-1);
+	    } 
+        else if (sum>maxScor2){
+	      maxScor2 = sum;
+        }
       }
     }
     __syncthreads();
@@ -690,12 +765,15 @@ __global__ void FindMaxCorr7(SiftPoint *sift1, SiftPoint *sift2, int numPts1, in
       sift1[p1].match = maxIndex;
       sift1[p1].match_xpos = sift2[maxIndex].xpos;
       sift1[p1].match_ypos = sift2[maxIndex].ypos;
-    } else if (maxScore>maxScor2Old)
+    } 
+    else if (maxScore>maxScor2Old){
       sift1[p1].ambiguity = maxScore / (sift1[p1].score + 1e-6f);
+    }
   }
   __syncthreads();
-  if (tx==0 && ty==0)
+  if (tx==0 && ty==0){
     atomicExch((int* )&lock, 0);
+  }
 }
 
 __global__ void FindMaxCorr6(SiftPoint *sift1, SiftPoint *sift2, int numPts1, int numPts2)
@@ -724,19 +802,22 @@ __global__ void FindMaxCorr6(SiftPoint *sift1, SiftPoint *sift2, int numPts1, in
       sum += ShiftDown(sum, 4);
       sum += ShiftDown(sum, 2);
       sum += ShiftDown(sum, 1);
-      if (tx==0)
-	sums[16*i + ty] = sum;
+      if (tx==0){
+	    sums[16*i + ty] = sum;
+      }
     }
     __syncthreads();
     if (ty==0 && tx<16) { 
       for (int j=0;j<16;j++) {
-	float sum = sums[16*j + tx];
-	if (sum>maxScore) { 
-	  maxScor2 = maxScore;
-	  maxScore = sum;
-	  maxIndex = min(blockIdx.y*512 +  k + j, numPts2-1);
-	} else if (sum>maxScor2)
-	  maxScor2 = sum;
+	    float sum = sums[16*j + tx];
+	    if (sum>maxScore) { 
+	      maxScor2 = maxScore;
+	      maxScore = sum;
+	      maxIndex = min(blockIdx.y*512 +  k + j, numPts2-1);
+	    } 
+        else if (sum>maxScor2){
+	      maxScor2 = sum;
+        }
       }
     }
     __syncthreads();
@@ -754,12 +835,15 @@ __global__ void FindMaxCorr6(SiftPoint *sift1, SiftPoint *sift2, int numPts1, in
       sift1[p1].match = maxIndex;
       sift1[p1].match_xpos = sift2[maxIndex].xpos;
       sift1[p1].match_ypos = sift2[maxIndex].ypos;
-    } else if (maxScore>maxScor2Old)
-      sift1[p1].ambiguity = maxScore / (sift1[p1].score + 1e-6f);
+    } 
+    else if (maxScore>maxScor2Old){
+        sift1[p1].ambiguity = maxScore / (sift1[p1].score + 1e-6f);
+    }
   }
   __syncthreads();
-  if (tx==0 && ty==0)
+  if (tx==0 && ty==0){
     atomicExch((int* )&lock, 0);
+  }
 }
  
 __global__ void FindMaxCorr5(SiftPoint *sift1, SiftPoint *sift2, int numPts1, int numPts2)
@@ -781,8 +865,9 @@ __global__ void FindMaxCorr5(SiftPoint *sift1, SiftPoint *sift2, int numPts1, in
       siftParts1[17*tx + ty] = pt1l[i*16 + tx]; // load and transpose
       siftParts2[17*tx + ty] = pt2l[i*16 + tx];
       __syncthreads();
-      for (int j=0;j<16;j++)
-	sum += siftParts1[17*j + tx] * siftParts2[17*j + ty];
+      for (int j=0;j<16;j++){
+	    sum += siftParts1[17*j + tx] * siftParts2[17*j + ty];
+      }
       __syncthreads();
     }
     float *sums = siftParts1;
@@ -790,13 +875,15 @@ __global__ void FindMaxCorr5(SiftPoint *sift1, SiftPoint *sift2, int numPts1, in
     __syncthreads();
     if (ty==0) { 
       for (int j=0;j<16;j++) {
-	float sum = sums[16*j + tx];
-	if (sum>maxScore) { 
-	  maxScor2 = maxScore;
-	  maxScore = sum;
-	  maxIndex = min(blockIdx.y*512 +  k*16 + j, numPts2-1);
-	} else if (sum>maxScor2)
-	  maxScor2 = sum;
+	    float sum = sums[16*j + tx];
+	    if (sum>maxScore) { 
+	      maxScor2 = maxScore;
+	      maxScore = sum;
+	      maxIndex = min(blockIdx.y*512 +  k*16 + j, numPts2-1);
+	    } 
+        else if (sum>maxScor2){
+          maxScor2 = sum;
+        }
       }
     }
     __syncthreads();
@@ -814,12 +901,15 @@ __global__ void FindMaxCorr5(SiftPoint *sift1, SiftPoint *sift2, int numPts1, in
       sift1[p1].match = maxIndex;
       sift1[p1].match_xpos = sift2[maxIndex].xpos;
       sift1[p1].match_ypos = sift2[maxIndex].ypos;
-    } else if (maxScore>maxScor2Old)
+    } 
+    else if (maxScore>maxScor2Old){
       sift1[p1].ambiguity = maxScore / (sift1[p1].score + 1e-6f);
+    }
   }
   __syncthreads();
-  if (tx==0 && ty==0)
+  if (tx==0 && ty==0){
     atomicExch((int* )&lock, 0);
+  }
 }
  
 
@@ -829,83 +919,97 @@ __device__ void InvertMatrix(float elem[size][size], float res[size][size])
   int indx[size];
   float b[size];
   float vv[size];
-  for (int i=0;i<size;i++)
+  for (int i=0;i<size;i++){
     indx[i] = 0;
+  }
   int imax = 0;
   float d = 1.0;
   for (int i=0;i<size;i++) { // find biggest element for each row
     float big = 0.0;
     for (int j=0;j<size;j++) {
       float temp = fabs(elem[i][j]); 
-      if (temp>big) 
-	big = temp;
+      if (temp>big) {
+	    big = temp;
+      }
     }
-    if (big>0.0)
+    if (big>0.0){
       vv[i] = 1.0/big;
-    else
+    }
+    else{
       vv[i] = 1e16;
+    }
   }
   for (int j=0;j<size;j++) { 
     for (int i=0;i<j;i++) { // i<j
       float sum = elem[i][j]; // i<j (lower left)
-      for (int k=0;k<i;k++) // k<i<j
-	sum -= elem[i][k]*elem[k][j]; // i>k (upper right), k<j (lower left)
+      for (int k=0;k<i;k++) {// k<i<j
+	    sum -= elem[i][k]*elem[k][j]; // i>k (upper right), k<j (lower left)
+      }
       elem[i][j] = sum; // i<j (lower left)
     }
     float big = 0.0;
     for (int i=j;i<size;i++) { // i>=j
       float sum = elem[i][j]; // i>=j (upper right)
-      for (int k=0;k<j;k++) // k<j<=i
-	sum -= elem[i][k]*elem[k][j]; // i>k (upper right), k<j (lower left)
+      for (int k=0;k<j;k++){ // k<j<=i
+	    sum -= elem[i][k]*elem[k][j]; // i>k (upper right), k<j (lower left)
+      }
       elem[i][j] = sum; // i>=j (upper right)
       float dum = vv[i]*fabs(sum);
       if (dum>=big) {
-	big = dum;
-	imax = i;  
+	    big = dum;
+	    imax = i;  
       }
     }
     if (j!=imax) { // imax>j
       for (int k=0;k<size;k++) {
-	float dum = elem[imax][k]; // upper right and lower left
-	elem[imax][k] = elem[j][k];
-	elem[j][k] = dum;
+	    float dum = elem[imax][k]; // upper right and lower left
+	    elem[imax][k] = elem[j][k];
+	    elem[j][k] = dum;
       }
       d = -d;
       vv[imax] = vv[j];
     }
     indx[j] = imax;
-    if (elem[j][j]==0.0)  // j==j (upper right)
+    if (elem[j][j]==0.0){  // j==j (upper right)
       elem[j][j] = 1e-16;
+    }
     if (j!=(size-1)) {
       float dum = 1.0/elem[j][j];
-      for (int i=j+1;i<size;i++) // i>j
-	elem[i][j] *= dum; // i>j (upper right)
+      for (int i=j+1;i<size;i++){ // i>j
+	    elem[i][j] *= dum; // i>j (upper right)
+      }
     }
   }
   for (int j=0;j<size;j++) {
-    for (int k=0;k<size;k++) 
+    for (int k=0;k<size;k++) {
       b[k] = 0.0;  
+    }
     b[j] = 1.0;
     int ii = -1;
     for (int i=0;i<size;i++) {
       int ip = indx[i];
       float sum = b[ip];
       b[ip] = b[i];
-      if (ii!=-1)
-	for (int j=ii;j<i;j++) 
-	  sum -= elem[i][j]*b[j]; // i>j (upper right)
-      else if (sum!=0.0)
+      if (ii!=-1){
+	    for (int j=ii;j<i;j++){ 
+	      sum -= elem[i][j]*b[j]; // i>j (upper right)
+        }
+      }
+      else if (sum!=0.0){
         ii = i;
+      }
       b[i] = sum;
     }
     for (int i=size-1;i>=0;i--) {
       float sum = b[i];
-      for (int j=i+1;j<size;j++) 
-	sum -= elem[i][j]*b[j]; // i<j (lower left)
+      for (int j=i+1;j<size;j++) {
+	    sum -= elem[i][j]*b[j]; // i<j (lower left)
+      }
       b[i] = sum/elem[i][i]; // i==i (upper right)
     }
-    for (int i=0;i<size;i++)
+    for (int i=0;i<size;i++){
       res[i][j] = b[i];
+    }
   }
 }
 
@@ -945,8 +1049,9 @@ __global__ void ComputeHomographies(float *coord, int *randPts, float *homo,
   __syncthreads();
   for (int j=0;j<8;j++) {
     float sum = 0.0f;
-    for (int i=0;i<8;i++) 
+    for (int i=0;i<8;i++) {
       sum += ia[j][i]*b[i];
+    }
     homo[j*numLoops+idx] = sum;
   }
   __syncthreads();
@@ -964,12 +1069,14 @@ __global__ void TestHomographies(float *d_coord, float *d_homo,
   const int ty = threadIdx.y;
   const int idx = blockIdx.y*blockDim.y + tx;
   const int numLoops = blockDim.y*gridDim.y;
-  if (ty<8 && tx<TESTHOMO_LOOPS)
+  if (ty<8 && tx<TESTHOMO_LOOPS){
     homo[tx*8+ty] = d_homo[idx+ty*numLoops];
+  }
   __syncthreads();
   float a[8];
-  for (int i=0;i<8;i++) 
+  for (int i=0;i<8;i++) {
     a[i] = homo[ty*8+i];
+  }
   int cnt = 0;
   for (int i=tx;i<numPts;i+=TESTHOMO_TESTS) {
     float x1 = d_coord[i+0*numPts];
@@ -982,21 +1089,24 @@ __global__ void TestHomographies(float *d_coord, float *d_homo,
     float errx = __fmul_rz(x2,deno) - nomx;
     float erry = __fmul_rz(y2,deno) - nomy;
     float err2 = __fmul_rz(errx,errx) + __fmul_rz(erry,erry);
-    if (err2<__fmul_rz(thresh2,__fmul_rz(deno,deno)))
+    if (err2<__fmul_rz(thresh2,__fmul_rz(deno,deno))){
       cnt ++;
+    }
   }
   int kty = TESTHOMO_TESTS*ty;
   cnts[kty + tx] = cnt;
   __syncthreads();
   int len = TESTHOMO_TESTS/2;
   while (len>0) {
-    if (tx<len)
+    if (tx<len){
       cnts[kty + tx] += cnts[kty + tx + len];
+    }
     len /= 2;
     __syncthreads();
   }
-  if (tx<TESTHOMO_LOOPS && ty==0)
+  if (tx<TESTHOMO_LOOPS && ty==0){
     d_counts[idx] = cnts[TESTHOMO_TESTS*tx];
+  }
   __syncthreads();
 }
 
@@ -1011,15 +1121,17 @@ double FindHomography(SiftData &data, float *homography, int *numMatches, int nu
 #ifdef MANAGEDMEM
   SiftPoint *d_sift = data.m_data;
 #else
-  if (data.d_data==NULL)
+  if (data.d_data==NULL){
     return 0.0f;
+  }
   SiftPoint *d_sift = data.d_data;
 #endif
   TimerGPU timer(0);
   numLoops = iDivUp(numLoops,16)*16;
   int numPts = data.numPts;
-  if (numPts<8)
+  if (numPts<8){
     return 0.0f;
+  }
   int numPtsUp = iDivUp(numPts, 16)*16;
   float *d_coord, *d_homo;
   int *d_randPts, *h_randPts;
@@ -1037,8 +1149,9 @@ double FindHomography(SiftData &data, float *homography, int *numMatches, int nu
   int *validPts = (int *)malloc(sizeof(int)*numPts);
   int numValid = 0;
   for (int i=0;i<numPts;i++) {
-    if (h_scores[i]>minScore && h_ambiguities[i]<maxAmbiguity)
+    if (h_scores[i]>minScore && h_ambiguities[i]<maxAmbiguity){
       validPts[numValid++] = i;
+    }
   }
   free(h_scores);
   free(h_ambiguities);
@@ -1071,11 +1184,12 @@ double FindHomography(SiftData &data, float *homography, int *numMatches, int nu
     checkMsg("TestHomographies() execution failed\n");
     safeCall(cudaMemcpy(h_randPts, d_randPts, sizeof(int)*numLoops, cudaMemcpyDeviceToHost));
     int maxIndex = -1, maxCount = -1;
-    for (int i=0;i<numLoops;i++) 
+    for (int i=0;i<numLoops;i++) {
       if (h_randPts[i]>maxCount) {
-	maxCount = h_randPts[i];
-	maxIndex = i;
+	    maxCount = h_randPts[i];
+	    maxIndex = i;
       }
+    }
     *numMatches = maxCount;
     safeCall(cudaMemcpy2D(homography, szFl, &d_homo[maxIndex], sizeof(float)*numLoops, szFl, 8, cudaMemcpyDeviceToHost));
   }
@@ -1097,14 +1211,16 @@ double MatchSiftData(SiftData &data1, SiftData &data2)
   TimerGPU timer(0);
   int numPts1 = data1.numPts;
   int numPts2 = data2.numPts;
-  if (!numPts1 || !numPts2) 
+  if (!numPts1 || !numPts2) {
     return 0.0;
+  }
 #ifdef MANAGEDMEM
   SiftPoint *sift1 = data1.m_data;
   SiftPoint *sift2 = data2.m_data;
 #else
-  if (data1.d_data==NULL || data2.d_data==NULL)
+  if (data1.d_data==NULL || data2.d_data==NULL){
     return 0.0f;
+  }
   SiftPoint *sift1 = data1.d_data;
   SiftPoint *sift2 = data2.d_data;
 #endif
@@ -1173,22 +1289,27 @@ double MatchSiftData(SiftData &data1, SiftData &data2)
   dim3 threadsMax3(16, 16);
   CleanMatches<<<iDivUp(numPts1, 64), 64>>>(sift1, numPts1);
   int mode = 10;
-  if (mode==5)// K40c 5.0ms, 1080 Ti 1.2ms, 2080 Ti 0.83ms
+  if (mode==5){// K40c 5.0ms, 1080 Ti 1.2ms, 2080 Ti 0.83ms
     FindMaxCorr5<<<blocksMax3, threadsMax3>>>(sift1, sift2, numPts1, numPts2);
+  }
   else if (mode==6) {                    // 2080 Ti 0.89ms
     threadsMax3 = dim3(32, 16);
     FindMaxCorr6<<<blocksMax3, threadsMax3>>>(sift1, sift2, numPts1, numPts2);
-  } else if (mode==7)                    // 2080 Ti 0.50ms  
+  } 
+  else if (mode==7){                    // 2080 Ti 0.50ms  
     FindMaxCorr7<<<blocksMax3, threadsMax3>>>(sift1, sift2, numPts1, numPts2);
+  }
   else if (mode==8) {                    // 2080 Ti 0.45ms
     blocksMax3 = dim3(iDivUp(numPts1, FMC_BW), iDivUp(numPts2, FMC_GH));
     threadsMax3 = dim3(FMC_NW, FMC_NH);
     FindMaxCorr8<<<blocksMax3, threadsMax3>>>(sift1, sift2, numPts1, numPts2);
-  } else if (mode==9) {                  // 2080 Ti 0.46ms
+  } 
+  else if (mode==9) {                  // 2080 Ti 0.46ms
     blocksMax3 = dim3(iDivUp(numPts1, FMC_BW), iDivUp(numPts2, FMC_GH));
     threadsMax3 = dim3(FMC_NW, FMC_NH);
     FindMaxCorr9<<<blocksMax3, threadsMax3>>>(sift1, sift2, numPts1, numPts2);
-  } else if (mode==10) {                 // 2080 Ti 0.24ms
+  } 
+  else if (mode==10) {                 // 2080 Ti 0.24ms
     blocksMax3 = dim3(iDivUp(numPts1, M7W));
     threadsMax3 = dim3(M7W, M7H/M7R);
     FindMaxCorr10<<<blocksMax3, threadsMax3>>>(sift1, sift2, numPts1, numPts2);
