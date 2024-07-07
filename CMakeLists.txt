@@ -80,7 +80,6 @@ set(CMAKE_C_FLAGS "${CLINE_WO_PEDANTIC}")
 #endif()
 
 set( cuda_sift_sources
-        ${CMAKE_CURRENT_LIST_DIR}/src/cudaImage.cu
         ${CMAKE_CURRENT_LIST_DIR}/src/cudaSiftD.cu
         ${CMAKE_CURRENT_LIST_DIR}/src/cudaSiftH.cu
         ${CMAKE_CURRENT_LIST_DIR}/src/geomFuncs.cpp
@@ -101,6 +100,7 @@ set (cuda_sift_hdrs
 set(sift_sources
         ${CMAKE_CURRENT_LIST_DIR}/src/geomFuncs.cpp  
         ${CMAKE_CURRENT_LIST_DIR}/src/cudaSiftH.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/src/cudaImage.cpp
 )
 
 #include_directories(
