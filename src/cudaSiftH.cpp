@@ -30,7 +30,7 @@ void InitCuda(int devNum)
   printf("  Memory Clock Rate (MHz): %d\n", prop.memoryClockRate/1000);
   printf("  Memory Bus Width (bits): %d\n", prop.memoryBusWidth);
   printf("  Peak Memory Bandwidth (GB/s): %.1f\n\n",
-	 2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6);
+	        2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6);
 }
 
 
@@ -63,8 +63,9 @@ float *AllocSiftTempMemory(int width, int height, int numOctaves, bool scaleUp)
 
 void FreeSiftTempMemory(float *memoryTmp)
 {
-  if (memoryTmp)
+  if (memoryTmp){
     safeCall(cudaFree(memoryTmp));
+  }
 }
 
 
@@ -154,8 +155,9 @@ void ExtractSiftOctave(SiftData &siftData, CudaImage &img, int octave, float thr
   printf("GPU time : %.2f ms + %.2f ms + %.2f ms = %.2f ms\n", totTime-gpuTimeDoG-gpuTimeSift, gpuTimeDoG, gpuTimeSift, totTime);
   safeCall(cudaMemcpy(&totPts, &d_PointCounterAddr[2*octave+1], sizeof(int), cudaMemcpyDeviceToHost));
   totPts = (totPts<siftData.maxPts ? totPts : siftData.maxPts);
-  if (totPts>0) 
+  if (totPts>0){ 
     printf("           %.2f ms / DoG,  %.4f ms / Sift,  #Sift = %d\n", gpuTimeDoG/NUM_SCALES, gpuTimeSift/(totPts-fstPts), totPts-fstPts); 
+  }
 #endif
 }
 
@@ -168,11 +170,13 @@ void InitSiftData(SiftData &data, int num, bool host, bool dev)
   safeCall(cudaMallocManaged((void **)&data.m_data, sz));
 #else
   data.h_data = NULL;
-  if (host)
+  if (host){
     data.h_data = (SiftPoint *)malloc(sz);
+  }
   data.d_data = NULL;
-  if (dev)
+  if (dev){
     safeCall(cudaMalloc((void **)&data.d_data, sz));
+  }
 #endif
 }
 
@@ -185,11 +189,13 @@ void FreeSiftData(SiftData &data)
 #ifdef MANAGEDMEM
   safeCall(cudaFree(data.m_data));
 #else
-  if (data.d_data!=NULL)
+  if (data.d_data!=NULL){
     safeCall(cudaFree(data.d_data));
+  }
   data.d_data = NULL;
-  if (data.h_data!=NULL)
+  if (data.h_data!=NULL){
     free(data.h_data);
+  }
 #endif
   data.numPts = 0;
   data.maxPts = 0;
@@ -218,16 +224,21 @@ void PrintSiftData(SiftData &data)
     printf("score        = %.2f\n", h_data[i].score);
     float *siftData = (float*)&h_data[i].data;
     for (int j=0;j<8;j++) {
-      if (j==0) 
-	printf("data = ");
-      else 
-	printf("       ");
-      for (int k=0;k<16;k++)
-	if (siftData[j+8*k]<0.05)
-	  printf(" .   ");
-	else
-	  printf("%.2f ", siftData[j+8*k]);
-      printf("\n");
+      if (j==0) {
+	    printf("data = ");
+      }
+      else {
+	    printf("       ");
+      }
+      for (int k=0;k<16;k++){
+	    if (siftData[j+8*k]<0.05){
+	      printf(" .   ");
+	    }
+        else{
+	      printf("%.2f ", siftData[j+8*k]);
+          printf("\n");
+        }
+      }
     }
   }
   printf("Number of available points: %d\n", data.numPts);
@@ -249,8 +260,9 @@ void PrepareLaplaceKernels(int numOctaves, float initBlur, float *kernel)
       kernel[numOctaves*12*16 + 16*i + j] = (float)expf(-(double)j*j/2.0/var);
       kernelSum += (j==0 ? 1 : 2)*kernel[numOctaves*12*16 + 16*i + j]; 
     }
-    for (unsigned int j=0;j<=LAPLACE_R;j++)
+    for (unsigned int j=0;j<=LAPLACE_R;j++){
       kernel[numOctaves*12*16 + 16*i + j] /= kernelSum;
+    }
     scale *= diffScale;
   }
 }
