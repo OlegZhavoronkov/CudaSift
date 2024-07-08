@@ -236,7 +236,8 @@ double LowPass(CudaImage &res, CudaImage &src, float scale)
   dim3 blocks(iDivUp(width, LOWPASS_W), iDivUp(height, LOWPASS_H));
 #if 1
   dim3 threads(LOWPASS_W+2*LOWPASS_R, 4); 
-  LowPassBlock<<<blocks, threads>>>(src.d_data, res.d_data, width, pitch, height);
+  LowPassBlock << <blocks , threads >> > ( src.d_data , res.d_data , width , pitch , height );
+  safeCall( cudaDeviceSynchronize( ) );
 #else
   dim3 threads(LOWPASS_W+2*LOWPASS_R, LOWPASS_H);
   LowPass<<<blocks, threads>>>(src.d_data, res.d_data, width, pitch, height);

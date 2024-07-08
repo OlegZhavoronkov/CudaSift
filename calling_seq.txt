@@ -1,0 +1,53 @@
+img1.Allocate(w, h, iAlignUp(w, 128), false, NULL, (float*)limg.data);
+    |   
+    +- > cudaMallocPitch((void **)&d_data, (size_t*)&pitch, (size_t)(sizeof(float)*width), (size_t)height)
+img1.Download();
+    |   
+    +- > cudaMemcpy2D(d_data, p, h_data, sizeof(float)*width, sizeof(float)*width, height, cudaMemcpyHostToDevice)
+
+InitSiftData(siftData1, 32768, true, true); 
+    |
+    +- > data.h_data = (SiftPoint *)malloc(sz);
+         safeCall(cudaMalloc((void **)&data.d_data, sz));
+
+float *memoryTmp = AllocSiftTempMemory(w, h, 5, false);
+    |
+    +- > safeCall(cudaMallocPitch((void **)&memoryTmp, &pitch, (size_t)4096, (size+4095)/4096*sizeof(float)));
+
+ExtractSift(siftData1, img1, 5, initBlur, thresh, 0.0f, false, memoryTmp);
+    |
+    +- > lowImg.Allocate(width, height, iAlignUp(width, 128), false, memorySub);
+         PrepareLaplaceKernels(numOctaves, 0.0f, kernel); <--check allocation in #66 float kernel[8*12*16];
+            |
+            +- > PrepareLaplaceKernels(numOctaves-1, totInitBlur, kernel);
+         safeCall(cudaMemcpyToSymbolAsync(d_LaplaceKernel, kernel, 8*12*16*sizeof(float)));
+         LowPass(lowImg, img, max(initBlur, 0.001f));
+            |
+            +- > safeCall(cudaMemcpyToSymbol(d_LowPassKernel, kernel, (2*LOWPASS_R+1)*sizeof(float)));
+                 LowPassBlock << <blocks , threads >> > ( src.d_data , res.d_data , width , pitch , height );
+         ExtractSiftLoop( siftData , lowImg , numOctaves , 0.0f , thresh , lowestScale , 1.0f , memoryTmp , memorySub + height * iAlignUp( width , 128 ) );
+            |
+            +- > subImg.Allocate(w/2, h/2, p, false, memorySub); 
+                +ScaleDown(subImg, img, 0.5f);
+                |   |
+                |   +- > safeCall(cudaMemcpyToSymbol(d_ScaleDownKernel, h_Kernel, 5*sizeof(float)));
+                |        ScaleDown<<<blocks, threads>>>(res.d_data, src.d_data, src.width, src.pitch, src.height, res.pitch);
+                +ExtractSiftLoop( siftData , lowImg , numOctaves , 0.0f , thresh , lowestScale , 1.0f , memoryTmp , memorySub + height * iAlignUp( width , 128 ) );
+                |
+                + ExtractSiftOctave(siftData, img, numOctaves, thresh, lowestScale, subsampling, memoryTmp);
+                    |
+                    +- > diffImg[i].Allocate(w, h, p, false, memoryTmp + i*p*h); 
+                         resDesc.res.pitch2D.desc = cudaCreateChannelDesc<float>();
+                         LaplaceMulti(texObj, img, diffImg, octave); 
+                            |
+                            +- > LaplaceMultiMem<<<blocks, threads>>>(baseImage.d_data, results[0].d_data, width, pitch, height, octave);
+                         FindPointsMulti(diffImg, siftData, thresh, 10.0f, 1.0f/NUM_SCALES, lowestScale/subsampling, subsampling, octave);
+                            |
+                            +-  > FindPointsMultiNew<<<blocks, threads>>>(sources->d_data, siftData.d_data, w, p, h, subsampling, lowestScale, thresh, factor, edgeLimit, octave);
+                         ComputeOrientations(texObj, img, siftData, octave); 
+                            |
+                            +- > ComputeOrientationsCONST<<<blocks, threads>>>(texObj, siftData.d_data, octave); <<check grid at #169: dim3 threads(11*11);
+                         ExtractSiftDescriptors(texObj, siftData, subsampling, octave); 
+                            |
+                            +- > ExtractSiftDescriptorsCONSTNew<<<blocks, threads>>>(texObj, siftData.d_data, subsampling, octave);
+                         safeCall(cudaDestroyTextureObject(texObj));

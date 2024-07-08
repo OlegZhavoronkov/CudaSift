@@ -46,9 +46,9 @@ float *AllocSiftTempMemory(int width, int height, int numOctaves, bool scaleUp)
   for (int i=0;i<numOctaves;i++) {
     w /= 2;
     h /= 2;
-    int p = iAlignUp(w, 128);
-    size += h*p;
-    sizeTmp += nd*h*p; 
+    int p1 = iAlignUp(w, 128);
+    size += h*p1;
+    sizeTmp += nd*h*p1; 
   }
   float *memoryTmp = NULL; 
   size_t pitch;
