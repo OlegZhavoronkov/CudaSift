@@ -8,13 +8,20 @@
 #ifdef WIN32
 #include <intrin.h>
 #endif
+#include <sstream>
 
-
-inline void __safeCall(cudaError err, const char *file, const int line)
+inline void __safeCall(cudaError err, const char *file, const int line,const char* msg)
 {
-  if (cudaSuccess != err) {
-    fprintf(stderr, "safeCall() Runtime API error in file <%s>, line %i : %s.\n", file, line, cudaGetErrorString(err));
-    exit(-1);
+    if (cudaSuccess != err)
+    {
+        std::stringstream str;
+        str << "safeCall() Runtime API error in file <" << file
+            << "> , line " << line << "\n"
+            << msg << "\n"
+            << cudaGetErrorString( err ) << "\n"
+            << "(cudaError " << err
+            << " )\n";
+        throw std::runtime_error( str.str( ) );
   }
 }
 
@@ -35,7 +42,7 @@ inline void __checkMsg(const char *errorMessage, const char *file, const int lin
     exit(-1);
   }
 }
-#define safeCall(err)       __safeCall(err, __FILE__, __LINE__)
+#define safeCall(err)       __safeCall(err, __FILE__, __LINE__,#err)
 #define safeThreadSync()    __safeThreadSync(__FILE__, __LINE__)
 #define checkMsg(msg)       __checkMsg(msg, __FILE__, __LINE__)
 

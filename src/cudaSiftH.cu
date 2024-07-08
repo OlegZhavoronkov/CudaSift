@@ -16,13 +16,23 @@
 #include "siftDeviceResidents.cuh"
 
 
+
+
+
 void ExtractSift(SiftData &siftData, CudaImage &img, int numOctaves, double initBlur, float thresh, float lowestScale, bool scaleUp, float *tempMemory) 
 {
-  TimerGPU timer(0);
-  unsigned int *d_PointCounterAddr;
-  safeCall(cudaGetSymbolAddress((void**)&d_PointCounterAddr, d_PointCounter));
-  safeCall(cudaMemset(d_PointCounterAddr, 0, (8*2+1)*sizeof(int)));
-  safeCall(cudaMemcpyToSymbol(d_MaxNumPoints, &siftData.maxPts, sizeof(int)));
+    safeCall( cudaGetLastError( ) );
+    TimerGPU timer( 0 );
+    unsigned int* d_PointCounterAddr;
+    
+    safeCall( cudaGetSymbolAddress( ( void** ) &d_PointCounterAddr , d_PointCounter ) );
+    {
+        size_t points_buff_size = 0;
+        safeCall( cudaGetSymbolSize( &points_buff_size , d_PointCounter ) );
+        safeCall( cudaMemset( d_PointCounterAddr , 0 , points_buff_size ) );
+    }
+    
+    safeCall(cudaMemcpyToSymbol(d_MaxNumPoints, &siftData.maxPts, sizeof(int)));
 
   const int nd = NUM_SCALES + 3;
   int w = img.width*(scaleUp ? 2 : 1);
@@ -58,9 +68,14 @@ void ExtractSift(SiftData &siftData, CudaImage &img, int numOctaves, double init
     safeCall(cudaMemcpyToSymbolAsync(d_LaplaceKernel, kernel, 8*12*16*sizeof(float)));
     LowPass(lowImg, img, max(initBlur, 0.001f));
     TimerGPU timer1(0);
-    ExtractSiftLoop(siftData, lowImg, numOctaves, 0.0f, thresh, lowestScale, 1.0f, memoryTmp, memorySub + height*iAlignUp(width, 128));
-    safeCall(cudaMemcpy(&siftData.numPts, &d_PointCounterAddr[2*numOctaves], sizeof(int), cudaMemcpyDeviceToHost)); 
-    siftData.numPts = (siftData.numPts<siftData.maxPts ? siftData.numPts : siftData.maxPts);
+    ExtractSiftLoop( siftData , lowImg , numOctaves , 0.0f , thresh , lowestScale , 1.0f , memoryTmp , memorySub + height * iAlignUp( width , 128 ) );
+    //8 * 2 + 1
+    unsigned int pointCntrs[ 2 * 8 + 1 ];
+    memset( pointCntrs , 0 , ( 2 * 8 + 1 ) * sizeof( unsigned int ) );
+    //safeCall( cudaMemcpy( &siftData.numPts , &d_PointCounterAddr[ 2 * numOctaves ] , sizeof( int ) , cudaMemcpyDeviceToHost ) );
+    safeCall( cudaMemcpy( pointCntrs , d_PointCounterAddr , ( 2 * numOctaves )*sizeof( unsigned int ) , cudaMemcpyDeviceToHost ) );
+    siftData.numPts = pointCntrs[ 2 * numOctaves ];
+    siftData.numPts = ( siftData.numPts < siftData.maxPts ? siftData.numPts : siftData.maxPts );
     printf("SIFT extraction time =        %.2f ms %d\n", timer1.read(), siftData.numPts);
   } else {
     CudaImage upImg;
