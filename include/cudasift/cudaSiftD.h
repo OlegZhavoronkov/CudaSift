@@ -45,14 +45,14 @@ constexpr const unsigned int LAPLACE_S = ( NUM_SCALES + 3 );
 
 // Laplace filter kernel radius
 //#define LAPLACE_R       4
-constexpr const unsigned int LAPLACE_R = 4;
+constexpr const int LAPLACE_R = 4;
 
 //#define LOWPASS_W      24 //56
-constexpr const unsigned int LOWPASS_W = 24; //56
+constexpr const int LOWPASS_W = 24; //56
 //#define LOWPASS_H      32 //16
-constexpr const unsigned int LOWPASS_H = 32;
+constexpr const int LOWPASS_H = 32;
 //#define LOWPASS_R       4
-constexpr const unsigned int LOWPASS_R = 4;
+constexpr const int LOWPASS_R = 4;
 
 //====================== Number of threads ====================//
 // ScaleDown:               SCALEDOWN_W + 4

@@ -73,7 +73,7 @@ void ExtractSift(SiftData &siftData, CudaImage &img, int numOctaves, double init
     unsigned int pointCntrs[ 2 * 8 + 1 ];
     memset( pointCntrs , 0 , ( 2 * 8 + 1 ) * sizeof( unsigned int ) );
     //safeCall( cudaMemcpy( &siftData.numPts , &d_PointCounterAddr[ 2 * numOctaves ] , sizeof( int ) , cudaMemcpyDeviceToHost ) );
-    safeCall( cudaMemcpy( pointCntrs , d_PointCounterAddr , ( 2 * numOctaves )*sizeof( unsigned int ) , cudaMemcpyDeviceToHost ) );
+    safeCall( cudaMemcpy( pointCntrs , d_PointCounterAddr , ( 2 * numOctaves + 1 )*sizeof( unsigned int ) , cudaMemcpyDeviceToHost ) );
     siftData.numPts = pointCntrs[ 2 * numOctaves ];
     siftData.numPts = ( siftData.numPts < siftData.maxPts ? siftData.numPts : siftData.maxPts );
     printf("SIFT extraction time =        %.2f ms %d\n", timer1.read(), siftData.numPts);
@@ -214,7 +214,7 @@ double RescalePositions(SiftData &siftData, float scale)
 
 double LowPass(CudaImage &res, CudaImage &src, float scale)
 {
-  float kernel[2*LOWPASS_R+1];
+  float kernel[2*LOWPASS_R+1] = {0};
   static float oldScale = -1.0f;
   if (scale!=oldScale) {
     float kernelSum = 0.0f;
