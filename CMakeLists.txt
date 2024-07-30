@@ -134,7 +134,7 @@ set(cudasift_dep_libs ${CUDA_cudart_LIBRARY} opencv_core)
 message("$\{CUDA_cudart_LIBRARY\}\n\"${CUDA_cudart_LIBRARY}\" \n$\{OpenCV_LIBS\} \"${OpenCV_LIBS}\"\n$\{cudasift_dep_libs\}\n${cudasift_dep_libs}")
 target_link_libraries(  cudasift 
 PUBLIC
-PRIVATE 
+#PRIVATE 
         ${cudasift_dep_libs}
 )
 #  /usr/local/cuda/lib64/libcudadevrt.a ${OpenCV_LIBS} 
