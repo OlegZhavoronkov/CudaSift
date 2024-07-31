@@ -266,3 +266,10 @@ void PrepareLaplaceKernels(int numOctaves, float initBlur, float *kernel)
     scale *= diffScale;
   }
 }
+
+void ToGpu( SiftData& data )
+{
+    cudasift_assert( ( data.numPts <= data.maxPts ) && ( data.d_data != nullptr ) && ( data.h_data != nullptr ) );
+    safeCall( cudaMemcpy( data.d_data , data.h_data , data.maxPts * sizeof( SiftPoint ) , cudaMemcpyKind::cudaMemcpyHostToDevice ) );
+    safeThreadSync( );
+}

@@ -41,6 +41,7 @@ void InitSiftData(SiftData &data, int num = 1024, bool host = false, bool dev = 
 void FreeSiftData(SiftData &data);
 void PrintSiftData(SiftData &data);
 double MatchSiftData(SiftData &data1, SiftData &data2);
-double FindHomography(SiftData &data,  float *homography, int *numMatches, int numLoops = 1000, float minScore = 0.85f, float maxAmbiguity = 0.95f, float thresh = 5.0f);
+double FindHomography( SiftData& data , float* homography , int* numMatches , int numLoops = 1000 , float minScore = 0.85f , float maxAmbiguity = 0.95f , float thresh = 5.0f );
+void ToGpu( SiftData& data );
 
 #endif
