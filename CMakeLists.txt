@@ -95,12 +95,14 @@ set (cuda_sift_hdrs
         ${CMAKE_CURRENT_LIST_DIR}/include/cudasift/cudaSiftD.h  
         ${CMAKE_CURRENT_LIST_DIR}/include/cudasift/cudaSift.h  
         ${CMAKE_CURRENT_LIST_DIR}/include/cudasift/cudautils.h
+        ${CMAKE_CURRENT_LIST_DIR}/include/cudasift/cudaSiftException.h
 )
 
 set(sift_sources
         ${CMAKE_CURRENT_LIST_DIR}/src/geomFuncs.cpp  
         ${CMAKE_CURRENT_LIST_DIR}/src/cudaSiftH.cpp
         ${CMAKE_CURRENT_LIST_DIR}/src/cudaImage.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/src/cudaSiftException.cpp
 )
 
 #include_directories(

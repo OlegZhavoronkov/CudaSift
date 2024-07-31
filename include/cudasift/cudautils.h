@@ -9,19 +9,21 @@
 #include <intrin.h>
 #endif
 #include <sstream>
+#include <cudasift/cudaSiftException.h>
 
-inline void __safeCall(cudaError err, const char *file, const int line,const char* msg)
+inline void __cudasift_assert( bool res , const char* file , const int line , const char* msg )
 {
-    if (cudaSuccess != err)
-    {
-        std::stringstream str;
-        str << "safeCall() Runtime API error in file <" << file
-            << "> , line " << line << "\n"
-            << msg << "\n"
-            << cudaGetErrorString( err ) << "\n"
-            << "(cudaError " << err
-            << " )\n";
-        throw std::runtime_error( str.str( ) );
+  if ( !res)
+  {
+      throw cudasift::CudaSiftException( file,line,msg );
+  }
+}
+
+inline void __safeCall( cudaError err , const char* file , const int line , const char* msg )
+{
+  if (cudaSuccess != err)
+  {
+      throw cudasift::CudaSiftGpuException( err,file,line,msg );
   }
 }
 
@@ -45,8 +47,9 @@ inline void __checkMsg(const char *errorMessage, const char *file, const int lin
 #define safeCall(err)       __safeCall(err, __FILE__, __LINE__,#err)
 #define safeThreadSync()    __safeThreadSync(__FILE__, __LINE__)
 #define checkMsg(msg)       __checkMsg(msg, __FILE__, __LINE__)
+#define cudasift_assert(res) __cudasift_assert(res,__FILE__,__LINE__,#res)
 
-inline bool deviceInit(int dev)
+inline bool deviceInit( int dev )
 {
   int deviceCount;
   safeCall(cudaGetDeviceCount(&deviceCount));

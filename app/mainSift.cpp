@@ -66,10 +66,11 @@ int main(int argc, char **argv)
   // A bit of benchmarking 
   //for (int thresh1=1.00f;thresh1<=4.01f;thresh1+=0.50f) {
   float *memoryTmp = AllocSiftTempMemory(w, h, 5, false);
-    for (int i=0;i<5;i++) {
-      ExtractSift(siftData1, img1, 5, initBlur, thresh, 0.0f, false, memoryTmp);
-      ExtractSift(siftData2, img2, 5, initBlur, thresh, 0.0f, false, memoryTmp);
-    }
+  for (int i = 0; i < 5; i++)
+  {
+    ExtractSift( siftData1 , img1 , 5 , initBlur , thresh , 0.0f , false , memoryTmp );
+    ExtractSift(siftData2, img2, 5, initBlur, thresh, 0.0f, false, memoryTmp);
+  }
     FreeSiftTempMemory(memoryTmp);
     
     // Match Sift features and find a homography
@@ -85,8 +86,8 @@ int main(int argc, char **argv)
     //}
   
   // Print out and store summary data
-  PrintMatchData(siftData1, siftData2, img1);
-  cv::imwrite("data/limg_pts.pgm", limg);
+    PrintMatchData( siftData1 , siftData2 , img1 );
+    cv::imwrite( "data/limg_pts.pgm" , limg );
 
   //MatchAll(siftData1, siftData2, homography);
   

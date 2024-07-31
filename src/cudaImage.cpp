@@ -21,15 +21,16 @@ void CudaImage::Allocate(int w, int h, int p, bool host, float *devmem, float *h
   d_data = devmem;
   h_data = hostmem; 
   t_data = NULL; 
-  if (devmem==NULL) {
+  if (devmem == nullptr)
+  {
     safeCall(cudaMallocPitch((void **)&d_data, (size_t*)&pitch, (size_t)(sizeof(float)*width), (size_t)height));
-    pitch /= sizeof(float);
-    if (d_data==NULL) 
-      printf("Failed to allocate device data\n");
+    pitch /= sizeof( float );
+    cudasift_assert( d_data != nullptr );
     d_internalAlloc = true;
   }
   if (host && hostmem==NULL) {
-    h_data = (float *)malloc(sizeof(float)*pitch*height);
+    h_data = ( float* ) malloc( sizeof( float ) * pitch * height );
+    cudasift_assert( h_data != nullptr );
     h_internalAlloc = true;
   }
 }
